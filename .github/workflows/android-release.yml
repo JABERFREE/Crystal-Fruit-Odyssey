@@ -1,8 +1,8 @@
-name: Android Debug Build
+name: Android Debug Build (Auto-Repair)
 
 on:
   push:
-    branches: [ "main" ] # سيعمل المصنع فوراً عند الحفظ
+    branches: [ "main" ]
   workflow_dispatch:
 
 jobs:
@@ -16,19 +16,20 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-          
-      - name: Build APK
+
+      - name: Generate & Build APK
         run: |
-          # هذا الأمر يحاول بناء التطبيق إذا وجد مجلد أندرويد
-          if [ -d "android" ]; then
-            cd android && chmod +x gradlew && ./gradlew assembleDebug
-          else
-            echo "Error: Android folder not found!"
-            exit 1
+          cd android
+          # إذا كان الملف مفقوداً، سنقوم بتوليده الآن
+          if [ ! -f "gradlew" ]; then
+            echo "Gradlew not found, generating it..."
+            gradle wrapper
           fi
+          chmod +x gradlew
+          ./gradlew assembleDebug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: NexApp-Crystal-Fruit-Debug
+          name: NexApp-Crystal-Fruit-V1
           path: android/app/build/outputs/apk/debug/app-debug.apk
