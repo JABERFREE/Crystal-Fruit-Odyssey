@@ -1,0 +1,15 @@
+{
+  "name": "PUZZLE FRUIT ODYSSEY",
+  "revisionLabel": "Implement 30-minute cooldown for rewarded ads",
+  "description": "Forked from Rosebud AI Universal Project",
+  "mode": "Universal",
+  "exportDate": "2026-04-24T13:30:38.583Z",
+  "rosebudBuiltInSplash": {
+    "present": true,
+    "version": 1
+  },
+  "assetCount": 183,
+  "assetTypes": [
+    "image"
+  ]
+}

@@ -1,0 +1,1748 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Crystal Fruit Odyssey</title>
+    <link rel="icon" type="image/webp" href="assets/app-icon.webp">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&display=swap" rel="stylesheet">
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://esm.sh/three@0.160.0",
+          "three/": "https://esm.sh/three@0.160.0/",
+          "tone": "https://esm.sh/tone@14.7.77",
+          "@instantdb/core": "https://esm.sh/@instantdb/core@0.22.155"
+        }
+      }
+    </script>
+    <style>
+      /* Success Star Animation */
+      .success-star {
+          position: fixed;
+          pointer-events: none;
+          z-index: 2000;
+          font-size: 40px;
+          filter: drop-shadow(0 0 10px gold);
+          animation: star-fly 1.5s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
+      }
+
+      @keyframes star-fly {
+          0% { transform: translate(-50%, -50%) scale(0) rotate(0deg); opacity: 1; }
+          50% { opacity: 1; filter: drop-shadow(0 0 25px gold); }
+          100% { transform: translate(var(--tx), var(--ty)) scale(2) rotate(360deg); opacity: 0; }
+      }
+
+      .success-label {
+          position: fixed;
+          left: 50%;
+          top: 40%;
+          transform: translate(-50%, -50%);
+          font-family: 'Fredoka One', cursive, sans-serif;
+          font-size: 80px;
+          color: #fff;
+          text-shadow: 0 0 20px #ff00ff, 0 0 40px #00ffff;
+          z-index: 2100;
+          pointer-events: none;
+          animation: success-pop 2s ease-out forwards;
+          white-space: nowrap;
+      }
+
+      @keyframes success-pop {
+          0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; filter: blur(10px); }
+          20% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; filter: blur(0); }
+          80% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+          100% { transform: translate(-50%, -60%) scale(1.5); opacity: 0; filter: blur(20px); }
+      }
+
+      html, body { 
+        margin: 0; 
+        padding: 0; 
+        background-color: #0d0415; 
+        height: 100%;
+        width: 100%;
+        overflow: hidden;
+        font-family: 'Fredoka One', cursive;
+        color: white;
+      }
+
+      /* Splash Screen */
+      #splash-screen {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: url('assets/splash-screen-bg-odyssey.webp') no-repeat center center;
+        background-size: cover;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-end;
+        padding-bottom: 120px;
+        z-index: 9999;
+        transition: opacity 1s ease-out;
+      }
+
+      #loading-container {
+        width: 320px;
+        height: 24px;
+        background: rgba(13, 4, 21, 0.8);
+        border: 2px solid #00ffff;
+        border-radius: 12px;
+        overflow: hidden;
+        position: relative;
+        box-shadow: 0 0 20px rgba(0, 255, 255, 0.3), inset 0 0 10px rgba(0,0,0,0.5);
+      }
+
+      #loading-bar {
+        width: 0%;
+        height: 100%;
+        background: linear-gradient(90deg, #00ffff, #00ff88, #00ffff);
+        background-size: 200% 100%;
+        box-shadow: 0 0 20px #00ffff;
+        transition: width 0.3s ease;
+        position: relative;
+        animation: crystal-pulse 2s infinite linear;
+      }
+
+      @keyframes crystal-pulse {
+        0% { background-position: 0% 50%; filter: brightness(1); }
+        50% { filter: brightness(1.5); }
+        100% { background-position: 200% 50%; filter: brightness(1); }
+      }
+
+      #loading-bar::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent);
+        animation: sparkle-sweep 1.5s linear infinite;
+      }
+
+      /* Stacked Panel Level Preview */
+      .stacked-panels {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        width: 100%;
+        margin: 20px 0;
+      }
+      .preview-panel {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(0, 255, 255, 0.2);
+        border-radius: 20px;
+        padding: 15px;
+        backdrop-filter: blur(5px);
+        position: relative;
+        overflow: hidden;
+      }
+      .preview-panel::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background: linear-gradient(135deg, rgba(0, 255, 255, 0.1), transparent);
+        pointer-events: none;
+      }
+
+      #preview-soldier {
+        width: 180px;
+        height: 240px;
+        background: url('assets/crystal-soldier-character-sprite.webp') no-repeat center center;
+        background-size: contain;
+        margin: -40px auto -20px;
+        z-index: 5;
+        position: relative;
+        filter: drop-shadow(0 0 15px rgba(0, 255, 255, 0.4));
+        animation: floating-soldier 3s ease-in-out infinite;
+      }
+
+      @keyframes floating-soldier {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-10px); }
+      }
+
+      .preview-header {
+        text-align: center;
+        padding: 10px 0;
+      }
+      
+      .preview-mission-title {
+        font-size: 0.9em;
+        letter-spacing: 4px;
+        color: #00ffff;
+        margin-bottom: 8px;
+        text-transform: uppercase;
+      }
+
+      .booster-selection-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+        margin-top: 10px;
+      }
+      
+      .booster-panel-item {
+        background: rgba(0, 0, 0, 0.3);
+        border: 2px solid rgba(255, 255, 255, 0.1);
+        border-radius: 15px;
+        padding: 10px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        position: relative;
+      }
+      .booster-panel-item.selected {
+        border-color: #00ffff;
+        background: rgba(0, 255, 255, 0.1);
+        transform: scale(1.05);
+        box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
+      }
+      .booster-panel-item .booster-count {
+        position: absolute;
+        top: -5px;
+        right: -5px;
+        background: #ffcc00;
+        color: #000;
+        font-size: 10px;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        border: 1px solid white;
+      }
+
+      @keyframes logo-float {
+        0%, 100% { transform: translateY(0) scale(1); }
+        50% { transform: translateY(-10px) scale(1.02); }
+      }
+
+      @keyframes sparkle-sweep {
+        0% { transform: translateX(-100%); }
+        100% { transform: translateX(100%); }
+      }
+
+      @keyframes juicy-pulse {
+        0% { transform: scale(1); box-shadow: 0 8px 0 #006666; }
+        50% { transform: scale(1.08); box-shadow: 0 12px 30px rgba(0, 255, 255, 0.6); }
+        100% { transform: scale(1); box-shadow: 0 8px 0 #006666; }
+      }
+
+      .juicy-pulse {
+        animation: juicy-pulse 2s ease-in-out infinite;
+      }
+      .crystal-frame-ui {
+          background: rgba(255, 255, 255, 0.05);
+          backdrop-filter: blur(15px);
+          border: 1px solid rgba(255, 255, 255, 0.3);
+          border-radius: 12px;
+          padding: 8px 15px;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          box-shadow: 0 4px 15px rgba(0,0,0,0.3), inset 0 0 15px rgba(255,255,255,0.05);
+          position: relative;
+          overflow: hidden;
+      }
+      .crystal-frame-ui::before {
+          content: '';
+          position: absolute;
+          top: 0; left: 0; width: 100%; height: 100%;
+          background: linear-gradient(135deg, rgba(255,255,255,0.1), transparent);
+          pointer-events: none;
+      }
+      
+      .top-ui-container {
+          position: fixed;
+          top: 20px;
+          width: 100%;
+          display: flex;
+          justify-content: center;
+          gap: 15px;
+          z-index: 100;
+          pointer-events: auto;
+      }
+
+      #main-play-btn {
+          padding: 15px 60px !important;
+          font-size: 2.2em !important;
+          border-radius: 50px !important;
+          background: linear-gradient(180deg, #00ffff, #0088ff) !important;
+          border: 3px solid #fff !important;
+          box-shadow: 0 0 30px rgba(0, 255, 255, 0.6), inset 0 0 15px rgba(255,255,255,0.3) !important;
+          color: #fff !important;
+          text-shadow: 0 2px 4px rgba(0,0,0,0.5) !important;
+          cursor: pointer;
+          font-family: 'Fredoka One', cursive;
+          transition: transform 0.1s, box-shadow 0.2s;
+      }
+      #main-play-btn:active { transform: scale(0.95); box-shadow: 0 0 15px rgba(0, 255, 255, 0.4); }
+
+      .bottom-ui-container {
+          position: fixed;
+          bottom: 30px;
+          width: 100%;
+          display: flex;
+          justify-content: center;
+          gap: 15px;
+          z-index: 100;
+          pointer-events: auto;
+      }
+      .bottom-btn-crystal {
+          width: 60px;
+          height: 60px;
+          background: rgba(255, 255, 255, 0.1);
+          backdrop-filter: blur(10px);
+          border: 1px solid rgba(255, 255, 255, 0.3);
+          border-radius: 15px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+          transition: transform 0.2s, background 0.2s;
+      }
+      .bottom-btn-crystal:hover { transform: scale(1.1); background: rgba(255, 255, 255, 0.2); }
+      .bottom-btn-crystal:active { transform: scale(0.9); }
+      .bottom-btn-crystal .hud-icon { width: 35px; height: 35px; background-size: contain; background-repeat: no-repeat; background-position: center; }
+
+      #ui-container {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: 10;
+        display: flex;
+        flex-direction: column;
+      }
+      .ui-overlay {
+        padding: 20px;
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        width: 100%;
+        box-sizing: border-box;
+      }
+      #game-ui {
+        justify-content: flex-start;
+        height: 100%;
+      }
+      .stat {
+        text-align: center;
+      }
+      .stat-label { font-size: 0.8em; opacity: 0.8; }
+      .stat-value { font-size: 1.5em; text-shadow: 0 0 10px rgba(255,255,255,0.5); }
+      
+      #map-ui {
+        justify-content: flex-start;
+        height: 100%;
+        padding: 0;
+      }
+      .map-hud {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        padding: 8px;
+        box-sizing: border-box;
+        pointer-events: auto;
+        gap: 10px;
+        z-index: 100;
+      }
+      .hud-item {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(12px);
+        padding: 6px 16px;
+        border-radius: 24px;
+        border: 2px solid rgba(0, 255, 255, 0.3);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.3), inset 0 0 10px rgba(0, 255, 255, 0.1);
+        cursor: pointer;
+        transition: transform 0.2s, border-color 0.2s;
+        transform: scale(0.9);
+        position: relative;
+        overflow: hidden;
+      }
+      .hud-item::after {
+        content: '';
+        position: absolute;
+        top: -100%;
+        left: -100%;
+        width: 300%;
+        height: 300%;
+        background: linear-gradient(45deg, transparent 45%, rgba(255,255,255,0.15) 50%, transparent 55%);
+        animation: glint 6s infinite;
+        pointer-events: none;
+      }
+      .hud-item:hover { border-color: rgba(0, 255, 255, 0.8); }
+      .hud-item:active { transform: scale(0.85); }
+      
+      .hud-icon-lives { background-image: url('assets/ui-spirits-heart-circular-purple.webp'); }
+      .hud-icon-stars { background-image: url('assets/optimized-star-sprite.webp'); }
+      .hud-icon-gold { background-image: url('assets/crystal-kiwi-slice.webp'); }
+      .hud-icon-gems { background-image: url('assets/rose-quartz-dragonfruit-jewel.webp'); }
+      .hud-icon-score { background-image: url('assets/yellow-star-jewel-v2.webp'); }
+      .hud-icon-moves { background-image: url('assets/amethyst-grape-sharp-png.webp'); }
+      .hud-icon-energy { background-image: url('assets/star-special-sharp-png.webp'); } /* Lightning placeholder */
+      
+      .hud-icon-shop { background-image: url('assets/ui-shop-cart-circular-purple.webp'); }
+      .hud-icon-settings { background-image: url('assets/ui-settings-gear-circular-purple.webp'); }
+      .hud-icon-trophy { background-image: url('assets/ui-rewards-trophy-circular-purple.webp'); }
+      .hud-icon-star { background-image: url('assets/optimized-star-sprite.webp'); }
+
+      .map-hud {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 15px;
+        box-sizing: border-box;
+        pointer-events: none;
+        z-index: 100;
+        background: linear-gradient(180deg, rgba(0,0,0,0.4), transparent);
+      }
+      
+      .map-hud-left { display: flex; align-items: center; gap: 8px; pointer-events: auto; }
+      .map-hud-center { 
+        display: flex; 
+        flex-direction: column;
+        align-items: center; 
+        pointer-events: auto;
+        transform: translateY(5px);
+      }
+      .map-hud-right { display: flex; align-items: center; gap: 8px; pointer-events: auto; }
+
+      .hud-value { font-size: 1.1em; font-weight: bold; color: #fff; text-shadow: 0 2px 8px rgba(0,0,0,0.8); }
+      
+      .level-progress-bar-container {
+        width: 100px;
+        height: 12px;
+        background: rgba(0,0,0,0.6);
+        border: 1.5px solid rgba(255,255,255,0.3);
+        border-radius: 6px;
+        overflow: hidden;
+        margin-top: -5px;
+        position: relative;
+      }
+      .level-progress-bar-fill {
+        width: 60%;
+        height: 100%;
+        background: linear-gradient(90deg, #ffcc00, #ff8800);
+        box-shadow: 0 0 10px rgba(255, 204, 0, 0.5);
+      }
+      .level-badge {
+        background: #ffcc00;
+        color: #5e00b3;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 0.8em;
+        border: 2px solid white;
+        margin-bottom: -8px;
+        z-index: 2;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+      }
+
+      .add-lives-btn {
+        background: linear-gradient(135deg, #00ffcc, #0099ff);
+        color: #0d0415;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        font-weight: bold;
+        margin-left: -10px;
+        border: 1.5px solid white;
+        box-shadow: 0 0 8px rgba(0,255,204,0.4);
+        z-index: 2;
+        cursor: pointer;
+      }
+
+      .game-hud-compact {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        padding: 8px;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        pointer-events: none;
+      }
+      .game-hud-item {
+        pointer-events: auto;
+        background: none;
+        padding: 4px 12px;
+        border-radius: 20px;
+        border: none;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        box-shadow: none;
+        transform: scale(0.85);
+      }
+
+      .map-footer {
+        position: absolute;
+        bottom: 25px;
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        gap: 15px;
+        pointer-events: auto;
+      }
+      .map-btn {
+        width: 65px;
+        height: 65px;
+        background: #2a0845;
+        border-radius: 50%;
+        border: 3px solid #00ffff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        box-shadow: 0 0 15px rgba(0, 255, 255, 0.4), inset 0 0 10px rgba(0, 255, 255, 0.2);
+        transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        position: relative;
+        overflow: hidden;
+      }
+
+      .map-btn .hud-icon {
+        width: 45px;
+        height: 45px;
+        background-size: contain;
+        background-repeat: no-repeat;
+        background-position: center;
+        filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+      }
+
+      .map-btn:hover { 
+        transform: scale(1.15); 
+        box-shadow: 0 0 25px rgba(0, 255, 255, 0.6);
+        border-color: #fff;
+      }
+      
+      .map-btn:active { transform: scale(0.9); }
+
+      /* Level Preview Modal Overhaul */
+      .cyan-glow-modal {
+        background: linear-gradient(180deg, #1a0a2e, #4a148c) !important;
+        border: 2px solid #00ffff !important;
+        box-shadow: 0 0 30px rgba(0, 255, 255, 0.4) !important;
+        border-radius: 40px !important;
+        padding: 30px !important;
+        position: relative;
+      }
+
+      .mission-goal-box {
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 30px;
+        padding: 25px;
+        margin: 20px 0;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 100%;
+        box-sizing: border-box;
+      }
+
+      .booster-selection-row {
+        display: flex;
+        justify-content: center;
+        gap: 25px;
+        margin: 25px 0;
+        width: 100%;
+      }
+
+      .booster-badge-count {
+        position: absolute;
+        bottom: 0;
+        right: 0;
+        background: #d4e157; /* Yellow-green as in image */
+        color: #000;
+        font-size: 11px;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        border: 1px solid white;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+      }
+
+      .modal-separator {
+        width: 100%;
+        height: 1px;
+        background: rgba(255, 255, 255, 0.2);
+        margin: 10px 0;
+      }
+
+      .play-btn-cyan {
+        width: 100%;
+        height: 75px;
+        border-radius: 37px;
+        background: linear-gradient(180deg, #4dd0e1, #00acc1) !important;
+        color: #004d40 !important;
+        font-size: 2.5em !important;
+        font-weight: bold;
+        border: 3px solid white !important;
+        box-shadow: 0 6px 0 #006064 !important;
+        cursor: pointer;
+        margin-top: 10px;
+        transition: all 0.1s;
+        text-shadow: none !important;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: 'Fredoka One', cursive;
+      }
+      .play-btn-cyan:active {
+        transform: translateY(4px);
+        box-shadow: 0 4px 0 #006666 !important;
+      }
+
+      .close-link {
+        color: rgba(255, 255, 255, 0.6);
+        text-decoration: underline;
+        font-size: 1.1em;
+        cursor: pointer;
+        margin-top: 15px;
+        display: block;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+      }
+      
+      /* Play Button Razor-Sharp */
+      #main-play-btn {
+        padding: 22px 70px !important;
+        font-size: 2em !important;
+        border-radius: 40px !important;
+        box-shadow: 0 12px 0 #004d4d !important;
+        background: linear-gradient(135deg, #00ffcc, #00b3ff) !important;
+        border: 4px solid white !important;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.3) !important;
+      }
+      
+      .title-card {
+        text-align: center;
+        background: linear-gradient(135deg, rgba(255,0,204,0.8), rgba(51,51,255,0.8));
+        backdrop-filter: blur(10px);
+        padding: 25px 50px;
+        border-radius: 35px;
+        border: 4px solid #fff;
+        box-shadow: 0 15px 45px rgba(0,0,0,0.6);
+        pointer-events: auto;
+        margin-top: 80px;
+      }
+      .btn {
+        background: linear-gradient(to bottom, #ffdd00, #ffaa00);
+        color: #5e00b3;
+        border: none;
+        padding: 18px 40px;
+        border-radius: 30px;
+        font-size: 1.4em;
+        font-family: inherit;
+        cursor: pointer;
+        box-shadow: 0 6px 0 #c2a700;
+        transition: transform 0.1s;
+        margin-top: 20px;
+        text-shadow: 1px 1px 0 rgba(255,255,255,0.5);
+      }
+      .btn:active { transform: translateY(4px); box-shadow: 0 2px 0 #c2a700; }
+      
+      .goal-display {
+        background: none;
+        padding: 8px 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        border: none;
+      }
+      .crystal-icon {
+        width: 35px;
+        height: 35px;
+        background: radial-gradient(circle, rgba(255, 0, 136, 0.8) 0%, rgba(255, 0, 136, 0) 75%);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: none;
+        border: none;
+        background-size: contain;
+        background-repeat: no-repeat;
+        background-position: center;
+      }
+
+      .meta-systems {
+        position: absolute;
+        bottom: 20px;
+        right: 20px;
+        display: flex;
+        gap: 15px;
+        pointer-events: auto;
+      }
+      .booster { 
+        background: radial-gradient(circle, rgba(255, 0, 136, 0.4) 0%, rgba(255, 0, 136, 0) 70%); 
+        width: 50px; height: 50px; 
+        border-radius: 50%; 
+        display: flex; align-items: center; justify-content: center; 
+        box-shadow: none;
+        cursor: pointer;
+        border: none;
+        transition: transform 0.2s;
+        background-size: 70%;
+        background-repeat: no-repeat;
+        background-position: center;
+      }
+      .booster:hover { transform: scale(1.1); }
+      /* Out of Lives Screen Optimized */
+      .out-of-lives-header {
+        font-size: 2.8em;
+        color: #fff;
+        text-shadow: 0 0 20px rgba(0, 255, 255, 0.6);
+        margin-bottom: 25px;
+        letter-spacing: 4px;
+        font-family: 'Fredoka One', cursive;
+      }
+      .lives-button-container {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        width: 100%;
+        margin-top: 15px;
+      }
+      .crystal-btn-premium {
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+        border: 3px solid rgba(0, 255, 255, 0.4);
+        border-radius: 35px;
+        padding: 20px 25px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        cursor: pointer;
+        transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 8px 0 rgba(0,0,0,0.3);
+      }
+      .crystal-btn-premium:hover {
+        border-color: #00ffff;
+        background: rgba(0, 255, 255, 0.1);
+        transform: translateY(-2px) scale(1.02);
+        box-shadow: 0 10px 20px rgba(0, 255, 255, 0.3);
+      }
+      .crystal-btn-premium:active {
+        transform: translateY(4px);
+        box-shadow: 0 2px 0 rgba(0,0,0,0.3);
+      }
+      .crystal-btn-premium .btn-label {
+        font-size: 1.4em;
+        font-weight: bold;
+        letter-spacing: 1px;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+      }
+      .video-play-icon {
+        width: 50px;
+        height: 50px;
+        background: url('assets/crystal-video-play-icon.webp') no-repeat center center;
+        background-size: contain;
+        filter: drop-shadow(0 0 12px gold);
+        animation: ad-icon-pulse 1.5s infinite ease-in-out;
+      }
+      @keyframes ad-icon-pulse {
+        0%, 100% { transform: scale(1); filter: brightness(1) drop-shadow(0 0 8px gold); }
+        50% { transform: scale(1.1); filter: brightness(1.2) drop-shadow(0 0 15px gold); }
+      }
+      .heart-mini-icon {
+        width: 30px;
+        height: 30px;
+        background: url('assets/ui-spirits-heart-circular-purple.webp') no-repeat center center;
+        background-size: contain;
+      }
+      .kiwi-mini-icon {
+        width: 25px;
+        height: 25px;
+        background: url('assets/crystal-kiwi-slice.webp') no-repeat center center;
+        background-size: contain;
+      }
+      .heart-ui-glow {
+          animation: heart-glow-flash 1s ease-out;
+      }
+      @keyframes heart-glow-flash {
+          0% { box-shadow: 0 0 0px #ff00ff; border-color: rgba(255, 255, 255, 0.3); }
+          50% { box-shadow: 0 0 40px #ff00ff, inset 0 0 20px #ff00ff; border-color: #ff00ff; transform: scale(1.2); }
+          100% { box-shadow: 0 0 0px #ff00ff; border-color: rgba(255, 255, 255, 0.3); }
+      }
+      .reward-particle {
+          position: fixed;
+          pointer-events: none;
+          z-index: 9999;
+          background: url('assets/ui-spirits-heart-circular-purple.webp') no-repeat center center;
+          background-size: contain;
+          width: 30px;
+          height: 30px;
+          filter: drop-shadow(0 0 10px #ff00ff);
+      }
+    </style>
+  
+<style>
+    #rosebud-exported-splash {
+        position: fixed;
+        inset: 0;
+        z-index: 2147483647;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #000;
+        opacity: 1;
+        transition: opacity 500ms ease-in-out;
+    }
+
+    #rosebud-exported-splash.is-hiding {
+        opacity: 0;
+    }
+
+    #rosebud-exported-splash .rosebud-exported-splash__content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 20px;
+        text-align: center;
+        color: #fff;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+
+    #rosebud-exported-splash .rosebud-exported-splash__logo {
+        width: 100px;
+        height: 100px;
+        animation: rosebud-exported-splash-breathe 2.4s ease-in-out infinite;
+    }
+
+    #rosebud-exported-splash .rosebud-exported-splash__text {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        font-size: 16px;
+        line-height: 1.25;
+        letter-spacing: 0.06em;
+    }
+
+    #rosebud-exported-splash .rosebud-exported-splash__text strong {
+        font-weight: 700;
+    }
+
+    #rosebud-exported-splash .rosebud-exported-splash__text span:last-child {
+        opacity: 0.88;
+    }
+
+    @keyframes rosebud-exported-splash-breathe {
+        0%,
+        100% {
+            transform: scale(1);
+        }
+        50% {
+            transform: scale(1.05);
+        }
+    }
+</style></head>
+  <body>
+<div id="rosebud-exported-splash" aria-live="polite">
+    <div class="rosebud-exported-splash__content">
+        <img
+            class="rosebud-exported-splash__logo"
+            src="__rosebud/rosebud-icon.png"
+            alt="Rosebud Logo"
+            width="100"
+            height="100"
+        />
+        <div class="rosebud-exported-splash__text" aria-label="Rosebud.AI Make Games">
+            <strong>Rosebud.AI</strong>
+            <span>Make Games</span>
+        </div>
+    </div>
+</div>
+    <div id="loading-system" style="position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); width: 350px; z-index: 10000; display: none; flex-direction: column; align-items: center; pointer-events: none;">
+      <div id="global-loading-container" style="width: 100%; height: 28px; background: rgba(13, 4, 21, 0.9); border: 2px solid #00ffff; border-radius: 14px; overflow: hidden; box-shadow: 0 0 25px rgba(0, 255, 255, 0.5), inset 0 0 15px rgba(0,0,0,0.8); position: relative;">
+        <div id="global-loading-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #00ffff, #00ff88, #00ffff); background-size: 200% 100%; box-shadow: 0 0 25px #00ffff; position: relative; animation: crystal-pulse 1s infinite linear;">
+          <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.7), transparent); animation: sparkle-sweep 0.6s linear infinite;"></div>
+        </div>
+      </div>
+      <p id="loading-text" style="margin-top: 15px; color: #00ffff; font-size: 0.9em; letter-spacing: 5px; text-shadow: 0 0 15px rgba(0,255,255,0.8); font-weight: bold; text-transform: uppercase;">Crystal Loading...</p>
+    </div>
+
+    <!-- Splash Screen -->
+    <div id="splash-screen">
+      <div style="margin-bottom: auto; margin-top: 50px; text-align: center;">
+          <div style="font-size: 0.6em; opacity: 0.8; letter-spacing: 4px; margin-bottom: 5px;">NEXAPP PRESENTS</div>
+          <div style="font-size: 1.2em; color: #00ffff; text-shadow: 0 0 10px #00ffff; letter-spacing: 2px;">CRYSTAL FRUIT ODYSSEY</div>
+      </div>
+      <div style="margin-bottom: 20px; display: flex; flex-direction: column; align-items: center; gap: 10px;">
+          <p style="color: #00ffff; font-size: 0.7em; letter-spacing: 3px; text-shadow: 0 0 10px rgba(0,0,0,0.8); margin: 0;">SYNCHRONIZING WITH EPIC GAMES STORE...</p>
+          <div style="font-size: 0.5em; opacity: 0.4; letter-spacing: 1px;">PRODUCTION BUILD v1.0.0-FINAL</div>
+      </div>
+    </div>
+
+    <div id="ui-container">
+      <!-- Build Branding Subtle -->
+      <div style="position: fixed; bottom: 5px; right: 10px; z-index: 10000; font-size: 0.55em; opacity: 0.5; color: #fff; pointer-events: none; letter-spacing: 1px;">
+        PARTNERS: NEXAPP • EPIC GAMES STORE
+      </div>
+      <div id="transition-ui" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: none; z-index: 9000; pointer-events: none; background: rgba(13, 4, 21, 0.4); backdrop-filter: blur(10px);">
+        <!-- Bar is now in loading-system -->
+      </div>
+      <div id="combo-ui" style="position: fixed; top: 120px; left: 50%; transform: translateX(-50%) scale(0); pointer-events: none; z-index: 1000; text-align: center; transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s;">
+        <div id="combo-multiplier" style="font-size: 4em; color: #ffdd00; text-shadow: 0 0 20px #ffdd00, 4px 4px 0 #0d0415; margin: 0; line-height: 1;">x2</div>
+        <div id="combo-label" style="font-size: 1.5em; color: #fff; text-shadow: 0 0 10px #ff00ff, 2px 2px 0 #0d0415; letter-spacing: 4px; margin-top: -5px;">COMBO!</div>
+      </div>
+      <div id="level-unlock-banner" style="position: fixed; top: 40%; left: 50%; transform: translate(-50%, -50%) scale(0); z-index: 1000; pointer-events: none; text-align: center; transition: transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); opacity: 0;">
+        <h1 style="font-size: 3.5em; margin: 0; color: #00ffff; text-shadow: 0 0 20px #00ffff, 4px 4px 0 #5e00b3; letter-spacing: 2px;">NEW LEVEL!</h1>
+        <div id="unlock-number" style="font-size: 5em; color: #ffcc00; text-shadow: 0 0 30px #ffcc00, 5px 5px 0 #5e00b3; margin-top: -10px;">6</div>
+      </div>
+      <div id="map-ui" class="ui-overlay" style="display: flex;">
+        <div class="top-ui-container">
+          <div class="crystal-frame-ui" onclick="window.game.toggleModal('lives-modal', true)">
+            <div class="hud-icon hud-icon-lives" style="width: 25px; height: 25px; background-size: contain; background-repeat: no-repeat;"></div>
+            <span class="hud-value" id="hud-lives">0</span>
+          </div>
+          <div class="crystal-frame-ui">
+            <div class="hud-icon hud-icon-energy" style="width: 25px; height: 25px; background-size: contain; background-repeat: no-repeat;"></div>
+          </div>
+          <div class="crystal-frame-ui" style="padding: 4px; border-radius: 50%;">
+            <div class="hud-icon" style="background-image: url('assets/sapphire-crystal-pineapple-marker.webp'); width: 35px; height: 35px; background-size: contain; background-repeat: no-repeat; background-position: center;"></div>
+          </div>
+          <div class="crystal-frame-ui" onclick="window.game.toggleModal('shop-modal', true)">
+            <div class="hud-icon hud-icon-gold" style="width: 25px; height: 25px; background-size: contain; background-repeat: no-repeat;"></div>
+            <span class="hud-value" id="hud-kiwis">2500</span>
+          </div>
+          <div class="crystal-frame-ui" onclick="window.game.toggleModal('shop-modal', true)">
+            <div class="hud-icon hud-icon-gems" style="width: 25px; height: 25px; background-size: contain; background-repeat: no-repeat;"></div>
+            <span class="hud-value" id="hud-gems">0</span>
+          </div>
+        </div>
+
+        <div id="play-now-container" style="position: absolute; bottom: 120px; width: 100%; display: flex; justify-content: center; pointer-events: auto;">
+          <button id="main-play-btn" class="juicy-pulse" onclick="window.game.showLevelPreview(progressManager.getUnlockedLevel())">PLAY!</button>
+        </div>
+
+        <div class="bottom-ui-container">
+          <div class="bottom-btn-crystal" onclick="window.game.toggleModal('shop-modal', true)">
+            <div class="hud-icon hud-icon-shop"></div>
+          </div>
+          <div class="bottom-btn-crystal" onclick="window.game.showDailyLoginModal()">
+            <div class="hud-icon" style="background-image: url('assets/fruit-mega-png.webp'); width: 45px; height: 45px; background-size: contain; background-repeat: no-repeat; background-position: center;"></div>
+            <div id="daily-notif-dot" class="notif-dot" style="display: none;"></div>
+          </div>
+          <div class="bottom-btn-crystal" onclick="window.game.showBoutiqueModal()">
+            <div class="hud-icon hud-icon-star"></div>
+          </div>
+          <div class="bottom-btn-crystal" onclick="window.game.toggleModal('treasure-hunt-modal', true)">
+            <div class="hud-icon hud-icon-trophy"></div>
+          </div>
+          <div class="bottom-btn-crystal" onclick="window.game.toggleModal('settings-modal', true)">
+            <div class="hud-icon hud-icon-settings"></div>
+          </div>
+        </div>
+      </div>
+
+      <style>
+        .notif-dot {
+            position: absolute;
+            top: -2px;
+            right: -2px;
+            width: 15px;
+            height: 15px;
+            background: #ff4444;
+            border-radius: 50%;
+            border: 2px solid white;
+            box-shadow: 0 0 10px rgba(255, 68, 68, 0.5);
+        }
+      </style>
+
+      <div id="game-ui" class="ui-overlay">
+        <div class="game-hud-compact">
+          <div style="display: flex; flex-direction: column; gap: 4px;">
+            <div class="game-hud-item" style="cursor: pointer;" onclick="window.game.showMap()">
+              <span class="hud-icon">⬅️</span>
+            </div>
+          </div>
+          
+          <div style="display: flex; gap: 4px; position: absolute; left: 50%; transform: translateX(-50%);">
+            <div class="game-hud-item">
+              <div class="hud-icon hud-icon-score"></div>
+              <span id="score" class="hud-value">0</span>
+            </div>
+            <div class="game-hud-item">
+              <span id="stars" class="hud-value" style="letter-spacing: 2px;">☆☆☆</span>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 4px;">
+             <div id="goals-container" style="display: flex; gap: 4px; pointer-events: auto;">
+                <div id="star-meter-container" class="game-hud-item" style="width: 120px; position: relative; padding: 4px 8px;">
+                  <div id="star-meter-bg" style="width: 100%; height: 10px; background: rgba(0,0,0,0.4); border-radius: 5px; overflow: hidden; border: 1px solid rgba(255,255,255,0.2);">
+                    <div id="star-meter-fill" style="width: 0%; height: 100%; background: linear-gradient(90deg, #ffdd00, #ff00ff); transition: width 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: 0 0 10px rgba(255, 221, 0, 0.5);"></div>
+                  </div>
+                  <div class="hud-icon hud-icon-stars" style="width: 20px; height: 20px; position: absolute; left: -10px; top: 50%; transform: translateY(-50%);"></div>
+                </div>
+                <div id="crystal-goal" class="game-hud-item">
+                  <div class="crystal-icon" style="width: 24px; height: 24px;"></div>
+                  <span id="goal-count" class="hud-value">30</span>
+                </div>
+                <div id="star-goal" class="game-hud-item" style="display: none;">
+                  <div class="hud-icon hud-icon-stars" style="width: 24px; height: 24px;"></div>
+                  <span id="star-goal-count" class="hud-value">0</span>
+                </div>
+              </div>
+              <div class="game-hud-item">
+                <div class="hud-icon hud-icon-moves"></div>
+                <span id="moves" class="hud-value">25</span>
+              </div>
+          </div>
+        </div>
+        
+        <div class="meta-systems">
+            <div class="booster" style="background-image: url('assets/fruit-jade-png.webp')" onclick="window.game.toggleModal('shop-modal', true)"></div>
+            <div class="booster" style="background-image: url('assets/crystal-kiwi-slice.webp')" onclick="window.game.toggleModal('shop-modal', true)"></div>
+            <div class="booster" style="background-image: url('assets/luxury-crystal-pineapple.webp')" onclick="window.game.toggleModal('lives-modal', true)"></div>
+        </div>
+      </div>
+
+      <!-- Modals -->
+      <div id="modal-overlay" class="modal-backdrop">
+        <style>
+          .modal-backdrop {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); backdrop-filter: blur(5px);
+            display: none; align-items: center; justify-content: center;
+            z-index: 100; pointer-events: auto;
+          }
+          .modal-content {
+            background: linear-gradient(135deg, #2a0845, #6441a5);
+            width: 90%; max-width: 400px; padding: 30px; border-radius: 40px;
+            border: 4px solid rgba(255,255,255,0.2); box-shadow: 0 20px 60px rgba(0,0,0,0.8);
+            text-align: center; color: white; position: relative;
+          }
+          .modal-content h2 { font-size: 2.2em; margin: 0 0 20px 0; text-shadow: 2px 2px #000; }
+          
+          /* Glowing Crystal Frame Design */
+          .crystal-frame {
+            background: linear-gradient(135deg, rgba(20, 10, 40, 0.95), rgba(60, 20, 100, 0.95)) !important;
+            border: 4px solid #00ffff !important;
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.4), inset 0 0 20px rgba(0, 255, 255, 0.2) !important;
+            overflow: hidden;
+          }
+          .crystal-glint {
+            position: absolute; top: -100%; left: -100%; width: 300%; height: 300%;
+            background: linear-gradient(45deg, transparent 45%, rgba(255,255,255,0.1) 50%, transparent 55%);
+            animation: glint 4s infinite;
+            pointer-events: none;
+          }
+          @keyframes glint {
+            0% { transform: translate(-20%, -20%); }
+            100% { transform: translate(20%, 20%); }
+          }
+          .goal-card {
+            background: rgba(0, 255, 255, 0.05);
+            border-radius: 25px;
+            padding: 20px;
+            border: 1px solid rgba(0, 255, 255, 0.2);
+            margin: 10px 0;
+          }
+          .goal-label { font-size: 0.8em; letter-spacing: 3px; opacity: 0.7; margin-bottom: 5px; color: #00ffff; }
+          .crystal-icon.large { width: 65px; height: 65px; }
+          .play-btn-main {
+            background: linear-gradient(to bottom, #00ffff, #0099ff) !important;
+            color: #0d0415 !important;
+            font-weight: bold;
+            font-size: 1.8em !important;
+            padding: 20px !important;
+            box-shadow: 0 8px 0 #006666 !important;
+            border: 2px solid white !important;
+          }
+          .play-btn-main:active { box-shadow: 0 2px 0 #006666 !important; transform: translateY(6px); }
+
+          .shop-section-title { 
+            font-size: 0.9em; opacity: 0.8; letter-spacing: 2px; margin: 20px 0 10px 0; 
+            text-align: left; color: #00ffff; border-bottom: 1px solid rgba(0, 255, 255, 0.2);
+            padding-bottom: 5px;
+          }
+          .shop-grid { display: grid; gap: 12px; margin-bottom: 20px; }
+          .shop-card {
+            background: rgba(255,255,255,0.1); border-radius: 20px; padding: 15px;
+            display: flex; align-items: center; justify-content: space-between;
+            border: 1px solid rgba(255,255,255,0.1); transition: all 0.2s;
+            cursor: pointer;
+          }
+          .shop-card:active { transform: scale(0.96); background: rgba(255,255,255,0.2); }
+          .shop-card-info { display: flex; align-items: center; gap: 15px; }
+          .shop-card-icon { font-size: 1.8em; }
+          .shop-card-text { text-align: left; }
+          .shop-card-name { font-size: 1.1em; font-weight: bold; }
+          .shop-card-desc { font-size: 0.7em; opacity: 0.7; }
+          .price-pill {
+            background: #ffcc00; color: #5e00b3; padding: 5px 12px;
+            border-radius: 15px; font-weight: bold; font-size: 0.9em;
+            box-shadow: 0 4px 0 #c2a700;
+          }
+          .price-pill.free { background: #00ff88; box-shadow: 0 4px 0 #00c266; }
+        </style>
+
+        <div id="treasure-hunt-modal" class="modal-content crystal-frame" style="max-width: 450px;">
+          <div class="crystal-glint"></div>
+          <h2 style="color: #ffaa00; text-shadow: 0 0 15px rgba(255,170,0,0.5);">TREASURE HUNT!</h2>
+          <p style="font-size: 0.9em; opacity: 0.8; margin-bottom: 20px;">Limited Time Event: Collect Treasure Chests in any level to earn the <span style="color: #ffcc00; font-weight: bold;">GOLDEN HAMMER</span>!</p>
+          
+          <div class="mission-goal-box" style="padding: 30px;">
+            <div id="treasure-progress-bar" style="width: 100%; height: 35px; background: rgba(0,0,0,0.7); border-radius: 17.5px; overflow: hidden; border: 2.5px solid #ffaa00; position: relative; margin-bottom: 10px; box-shadow: inset 0 0 15px rgba(0,0,0,0.8);">
+              <div id="treasure-progress-fill" style="width: 0%; height: 100%; background: linear-gradient(90deg, #ff8800, #ffcc00, #ff8800); background-size: 200% 100%; animation: crystal-pulse 2s infinite linear; box-shadow: 0 0 20px #ffaa00;"></div>
+              <div id="treasure-progress-text" style="position: absolute; width: 100%; text-align: center; top: 0; line-height: 35px; font-size: 1.1em; font-weight: bold; text-shadow: 0 2px 4px #000; letter-spacing: 2px;">0/20</div>
+            </div>
+          </div>
+
+          <div style="display: flex; align-items: center; gap: 15px; background: rgba(255, 255, 255, 0.05); padding: 15px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 25px;">
+            <div class="hud-icon" style="background-image: url('assets/ui-rewards-trophy-circular-purple.webp'); width: 50px; height: 50px;"></div>
+            <div style="text-align: left;">
+              <div style="font-weight: bold; color: #ffcc00;">REWARD: GOLDEN HAMMER</div>
+              <div style="font-size: 0.7em; opacity: 0.7;">Clears any selected crystal instantly!</div>
+            </div>
+          </div>
+
+          <button class="play-btn-cyan juicy-pulse" onclick="window.game.toggleModal('treasure-hunt-modal', false)" style="width: 100%;">LET'S HUNT!</button>
+        </div>
+
+        <div id="boutique-modal" class="modal-content crystal-frame" style="max-width: 480px;">
+          <div class="crystal-glint"></div>
+          <h2 style="color: #ffcc00; text-shadow: 0 0 15px rgba(255,204,0,0.5);">CRYSTAL BOUTIQUE</h2>
+          <p style="font-size: 0.8em; opacity: 0.7; margin-bottom: 15px;">Permanent Luxury Enhancements</p>
+          
+          <div style="max-height: 60vh; overflow-y: auto; padding-right: 10px;">
+            <div class="shop-section-title">CHARACTER SKINS</div>
+            <div class="shop-grid" id="skin-grid">
+              <!-- Populated by JS -->
+            </div>
+
+            <div class="shop-section-title">MAP PATH STYLES</div>
+            <div class="shop-grid" id="branch-grid">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+          
+          <button class="btn" style="width: 100%; margin-top: 20px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); box-shadow: none;" onclick="window.game.toggleModal('boutique-modal', false)">CLOSE</button>
+        </div>
+
+        <div id="daily-login-modal" class="modal-content crystal-frame" style="max-width: 500px;">
+          <div class="crystal-glint"></div>
+          <h2 style="color: #00ffff; text-shadow: 0 0 15px rgba(0,255,255,0.5); margin-bottom: 5px;">DAILY REWARDS</h2>
+          <p style="font-size: 0.8em; opacity: 0.7; margin-bottom: 20px;">Log in every day for bigger rewards!</p>
+          
+          <div id="login-calendar" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 25px;">
+            <style>
+              .calendar-day {
+                background: rgba(0, 0, 0, 0.3);
+                border-radius: 15px;
+                padding: 10px 5px;
+                border: 2px solid rgba(255, 255, 255, 0.1);
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 5px;
+                position: relative;
+                transition: all 0.3s;
+              }
+              .calendar-day.claimed {
+                border-color: #00ff88;
+                background: rgba(0, 255, 136, 0.1);
+              }
+              .calendar-day.current {
+                border-color: #ffcc00;
+                background: rgba(255, 204, 0, 0.1);
+                transform: scale(1.05);
+                box-shadow: 0 0 15px rgba(255, 204, 0, 0.3);
+              }
+              .calendar-day.claimed::after {
+                content: '✓';
+                position: absolute;
+                top: -5px;
+                right: -5px;
+                background: #00ff88;
+                color: #000;
+                width: 18px;
+                height: 18px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 12px;
+                font-weight: bold;
+                border: 1px solid white;
+              }
+              .calendar-day-label { font-size: 0.7em; opacity: 0.8; }
+              .calendar-day-icon { width: 35px; height: 35px; background-size: contain; background-repeat: no-repeat; background-position: center; }
+              .calendar-day-reward { font-size: 0.6em; font-weight: bold; text-align: center; }
+            </style>
+            <!-- Generated by JS -->
+          </div>
+
+          <button id="claim-daily-btn" class="play-btn-cyan juicy-pulse" style="width: 100%;" onclick="window.game.claimDailyReward()">CLAIM DAY 1</button>
+          <button id="close-daily-btn" class="btn" style="background: rgba(255,255,255,0.05); width: 100%; font-size: 0.9em; border: 1px solid rgba(255,255,255,0.1); box-shadow: none; margin-top: 15px; display: none;" onclick="window.game.toggleModal('daily-login-modal', false)">CLOSE</button>
+        </div>
+
+        <div id="rewards-modal" class="modal-content crystal-frame" style="max-width: 480px;">
+          <div class="crystal-glint"></div>
+          <div id="reward-header-area" style="margin-bottom: 10px;">
+              <div style="font-size: 0.8em; letter-spacing: 5px; color: #00ffff; margin-bottom: 5px; text-transform: uppercase; font-weight: bold;">Stage Clear!</div>
+              <h2 id="reward-stage-title" style="color: #ffcc00; text-shadow: 0 0 15px rgba(255,204,0,0.5); font-size: 3.2em; margin: 0; font-family: 'Fredoka One', cursive;">LEVEL 1</h2>
+          </div>
+          
+          <div id="reward-stars-display" style="font-size: 4.5em; margin: 10px 0; filter: drop-shadow(0 0 15px rgba(255,204,0,0.6)); height: 80px; display: flex; align-items: center; justify-content: center;">⭐⭐⭐</div>
+          
+          <div class="mission-goal-box" style="background: rgba(0,0,0,0.35); border: 2px solid rgba(0,255,255,0.25); padding: 25px; border-radius: 35px; box-shadow: inset 0 0 20px rgba(0,0,0,0.5);">
+            <div style="font-size: 0.75em; letter-spacing: 4px; color: #00ffff; margin-bottom: 25px; text-transform: uppercase; font-weight: bold; opacity: 0.9;">Crystalline Earnings</div>
+            <div id="rewards-list" style="display: flex; justify-content: center; gap: 30px; flex-wrap: wrap; padding: 5px;">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+
+          <div style="margin-top: 25px; display: flex; flex-direction: column; gap: 12px; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 20px;">
+            <p id="reward-score-text" style="font-size: 1.6em; color: #fff; margin: 0; text-shadow: 0 2px 4px rgba(0,0,0,0.5); font-weight: bold;">Score: <span style="color: #ffcc00;">45,000</span></p>
+            <div style="width: 100%; height: 1px; background: rgba(255,255,255,0.1);"></div>
+            <p style="font-size: 0.8em; color: rgba(0,255,255,0.8); letter-spacing: 2px; font-weight: bold; text-transform: uppercase;">LEVEL PROGRESS PERMANENTLY SAVED</p>
+          </div>
+          
+          <button class="play-btn-cyan juicy-pulse" id="reward-collect-btn" style="width: 100%; margin-top: 25px; height: 80px; font-size: 2.2em !important;">COLLECT & CONTINUE</button>
+        </div>
+
+        <div id="win-modal" class="modal-content crystal-frame">
+          <div class="crystal-glint"></div>
+          <h2 style="color: #00ff88; text-shadow: 0 0 15px rgba(0,255,136,0.5);">LEVEL COMPLETE!</h2>
+          
+          <div class="star-rating-container">
+            <style>
+              .star-rating-container {
+                display: flex;
+                justify-content: center;
+                gap: 15px;
+                margin: 20px 0;
+              }
+              .star-slot {
+                width: 70px;
+                height: 70px;
+                position: relative;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 4em;
+                color: rgba(255,255,255,0.05);
+                filter: drop-shadow(0 0 5px rgba(0,0,0,0.5));
+                transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+              }
+              .star-slot.filled {
+                color: #ffcc00;
+                text-shadow: 0 0 25px #ffcc00, 0 0 50px #ff8800;
+                transform: scale(1.1);
+                animation: star-pop 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+              }
+              @keyframes star-pop {
+                0% { transform: scale(0) rotate(-45deg); opacity: 0; }
+                70% { transform: scale(1.4) rotate(10deg); opacity: 1; }
+                100% { transform: scale(1.1) rotate(0deg); opacity: 1; }
+              }
+            </style>
+            <div class="star-slot" id="win-star-1">⭐</div>
+            <div class="star-slot" id="win-star-2">⭐</div>
+            <div class="star-slot" id="win-star-3">⭐</div>
+          </div>
+
+          <div class="modal-stat" style="font-size: 1.8em; margin-bottom: 25px; font-weight: bold;">
+            <div style="font-size: 0.5em; opacity: 0.7; letter-spacing: 2px;">SCORE</div>
+            <span id="win-score" style="color: #ffcc00; text-shadow: 0 0 10px rgba(255,204,0,0.4);">0</span>
+          </div>
+          <button id="win-claim-btn" class="btn play-btn-main" style="width: 100%; letter-spacing: 1px;">CLAIM REWARDS</button>
+        </div>
+
+        <div id="fail-modal" class="modal-content crystal-frame" style="max-width: 450px; background: linear-gradient(135deg, #2e0a0a, #5e1a1a) !important; border-color: #ff4444 !important; box-shadow: 0 0 30px rgba(255, 68, 68, 0.4) !important;">
+          <div class="crystal-glint"></div>
+          <div style="position: relative; padding-top: 20px;">
+              <div id="fail-icon" style="font-size: 5em; margin-bottom: 10px; filter: drop-shadow(0 0 20px rgba(0,0,0,0.5));">😢</div>
+              <h2 id="fail-title" style="margin: 0; font-size: 2.8em; color: #ff4444; text-shadow: 0 0 15px rgba(255,68,68,0.5);">OUT OF MOVES!</h2>
+          </div>
+          
+          <div class="preview-section goal-card" style="margin-top: 25px; background: rgba(255, 68, 68, 0.08); border: 2px solid rgba(255, 68, 68, 0.2); border-radius: 30px; position: relative; overflow: hidden;">
+            <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(180deg, transparent, rgba(255,68,68,0.05)); pointer-events: none;"></div>
+            <p id="fail-message" style="margin: 15px 0; color: #fff; font-size: 1.2em; line-height: 1.4;">So close! You were just a few matches away from victory.</p>
+            <div id="fail-progress-display" style="display: flex; justify-content: center; gap: 20px; align-items: center; padding: 10px 0;">
+                <!-- This will be populated by JS -->
+            </div>
+          </div>
+
+          <div style="margin: 25px 0; display: flex; flex-direction: column; gap: 12px;">
+            <button id="buy-moves-btn" class="btn play-btn-main juicy-pulse" onclick="window.game.buyExtraMoves()" style="width: 100%; height: 80px; font-size: 1.8em !important; border-radius: 40px; background: linear-gradient(180deg, #ffdd00, #ff8800) !important; color: #0d0415 !important; box-shadow: 0 8px 0 #996600 !important; border: 2px solid white !important;">
+                +5 MOVES (100 💎)
+            </button>
+            <button id="ad-moves-btn" class="crystal-btn-premium" onclick="window.game.watchAdForMoves()" style="background: rgba(255, 204, 0, 0.1); border-color: rgba(255, 204, 0, 0.5);">
+                <div class="shop-card-text">
+                    <div class="btn-label" style="color: #ffcc00;">+5 MOVES FREE</div>
+                    <div class="btn-sublabel" style="color: #ffcc00; opacity: 0.9;">WATCH AD TO CONTINUE</div>
+                </div>
+                <div class="reward-icon-group" style="display: flex; align-items: center; gap: 5px;">
+                    <div class="hud-icon hud-icon-moves" style="width: 30px; height: 30px; background-size: contain; background-repeat: no-repeat;"></div>
+                    <div class="video-play-icon"></div>
+                </div>
+            </button>
+            <button id="ad-lives-btn" class="crystal-btn-premium" onclick="window.game.watchAdForLives()" style="background: rgba(255, 0, 255, 0.1); border-color: rgba(255, 0, 255, 0.5); display: none;">
+                <div class="shop-card-text">
+                    <div class="btn-label" style="color: #ff00ff;">WATCH AD</div>
+                    <div class="btn-sublabel" style="color: #ff00ff; opacity: 0.9;">GET +5 SPIRITS FREE</div>
+                </div>
+                <div class="reward-icon-group" style="display: flex; align-items: center; gap: 5px;">
+                    <div class="hud-icon hud-icon-lives" style="width: 30px; height: 30px; background-size: contain; background-repeat: no-repeat;"></div>
+                    <div class="video-play-icon"></div>
+                </div>
+            </button>
+          </div>
+          
+          <button class="btn" style="background: none; font-size: 1.1em; width: 100%; border: none; box-shadow: none; color: rgba(255,255,255,0.6); text-decoration: underline;" onclick="window.game.showMap()">GIVE UP & QUIT</button>
+        </div>
+
+        <div id="shop-modal" class="modal-content crystal-frame" style="max-width: 480px;">
+          <div class="crystal-glint"></div>
+          <h2 style="color: #ffcc00; text-shadow: 0 0 15px rgba(255,204,0,0.5);">CRYSTAL BANK</h2>
+          <p style="font-size: 0.8em; opacity: 0.7; margin-bottom: 15px;">Secure Premium In-App Purchases</p>
+          
+          <div style="max-height: 60vh; overflow-y: auto; padding-right: 10px; margin-bottom: 10px;">
+            <div class="shop-section-title">GOLD BARS & SPIRITS</div>
+            <div class="shop-grid">
+              <div class="shop-card" onclick="window.game.buyLife()" style="border: 2px solid rgba(255,204,0,0.3); background: rgba(255,204,0,0.05);">
+                <div class="shop-card-info">
+                  <div class="hud-icon" style="background-image: url('assets/luxury-crystal-pineapple.webp'); width: 45px; height: 45px;"></div>
+                  <div class="shop-card-text">
+                    <div class="shop-card-name" style="color: #ffcc00;">1 Spirit Crystal</div>
+                    <div class="shop-card-desc">Restore one life instantly</div>
+                  </div>
+                </div>
+                <div class="price-pill">100 🥝</div>
+              </div>
+              <div class="shop-card" onclick="window.game.refillLives()">
+                <div class="shop-card-info">
+                  <div class="hud-icon" style="background-image: url('assets/luxury-crystal-pineapple.webp'); width: 45px; height: 45px;"></div>
+                  <div class="shop-card-text">
+                    <div class="shop-card-name">MAX SPIRITS</div>
+                    <div class="shop-card-desc">Full life refill pack</div>
+                  </div>
+                </div>
+                <div class="price-pill">200 💎</div>
+              </div>
+            </div>
+
+            <div class="shop-section-title">CRYSTAL BOOSTS</div>
+            <div class="shop-grid">
+              <div class="shop-card" onclick="window.game.buyBooster('shaker', 100, '5 Shakers')">
+                <div class="shop-card-info">
+                  <div class="hud-icon" style="background-image: url('assets/booster-shaker-magic.webp'); width: 45px; height: 45px;"></div>
+                  <div class="shop-card-text">
+                    <div class="shop-card-name">5 Magic Shakers</div>
+                    <div class="shop-card-desc">Clear random crystals</div>
+                  </div>
+                </div>
+                <div class="price-pill">100 💎</div>
+              </div>
+              <div class="shop-card" onclick="window.game.buyBooster('bomb', 150, '3 Bombs')">
+                <div class="shop-card-info">
+                  <div class="hud-icon" style="background-image: url('assets/booster-bomb-crystal.webp'); width: 45px; height: 45px;"></div>
+                  <div class="shop-card-text">
+                    <div class="shop-card-name">3 Crystal Bombs</div>
+                    <div class="shop-card-desc">Shatter the surroundings</div>
+                  </div>
+                </div>
+                <div class="price-pill">150 💎</div>
+              </div>
+            </div>
+
+            <div class="shop-section-title">DRAGON GEM VAULT</div>
+            <div class="shop-grid">
+              <div class="shop-card" onclick="progressManager.addGems(500); window.game.showToast('500 Dragon Gems Credited! 💎')">
+                <div class="shop-card-info">
+                  <div class="hud-icon" style="background-image: url('assets/rose-quartz-dragonfruit-jewel.webp'); width: 40px; height: 40px;"></div>
+                  <div class="shop-card-text">
+                    <div class="shop-card-name">Loyalty Pack</div>
+                    <div class="shop-card-desc">Support-A-Creator bonus</div>
+                  </div>
+                </div>
+                <div class="price-pill free" style="background: #00ffff; color: #000;">CLAIM</div>
+              </div>
+            </div>
+          </div>
+          <button class="play-btn-cyan" style="width: 100%; height: 60px; font-size: 1.2em !important;" onclick="window.game.toggleModal('shop-modal', false)">RETURN TO GARDEN</button>
+        </div>
+
+        <div id="lives-modal" class="modal-content crystal-frame">
+          <div class="crystal-glint"></div>
+          <h2 class="out-of-lives-header">OUT OF SPIRITS!</h2>
+          
+          <div style="display: flex; justify-content: center; margin-bottom: 25px;">
+            <div id="modal-lives-heart-icon" class="hud-icon" style="background-image: url('assets/ui-spirits-heart-circular-purple.webp'); width: 100px; height: 100px; filter: drop-shadow(0 0 20px rgba(255,0,255,0.4));"></div>
+          </div>
+          
+          <div id="modal-lives-display" style="font-size: 2.2em; font-weight: bold; margin-bottom: 5px;">0/5</div>
+          
+          <div class="lives-button-container">
+            <!-- Button 1: BUY LIVES -->
+            <div class="crystal-btn-premium" onclick="window.game.buyLife()">
+                <div class="shop-card-text">
+                    <div class="btn-label">BUY SPIRIT</div>
+                    <div class="btn-sublabel">REFILL 1 SPIRIT INSTANTLY</div>
+                </div>
+                <div class="reward-icon-group">
+                    <div class="kiwi-mini-icon"></div>
+                    <div class="price-pill">100</div>
+                </div>
+            </div>
+
+            <!-- Button 2: GET LIVES FREE (Rewarded Ad) -->
+            <div id="lives-modal-ad-btn" class="crystal-btn-premium" onclick="window.game.watchRewardedAd()" style="background: rgba(255, 204, 0, 0.1); border-color: rgba(255, 204, 0, 0.5);">
+                <div class="shop-card-text">
+                    <div class="btn-label" style="color: #ffcc00;">GET LIVES FREE</div>
+                    <div class="btn-sublabel" style="color: #ffcc00; opacity: 0.9;">WATCH AD FOR +5 SPIRITS</div>
+                </div>
+                <div class="reward-icon-group">
+                    <div class="heart-mini-icon"></div>
+                    <div class="video-play-icon"></div>
+                </div>
+            </div>
+
+            <!-- Button 3: WAIT -->
+            <div class="crystal-btn-premium" style="opacity: 0.8; cursor: default;">
+                <div class="shop-card-text">
+                    <div class="btn-label">WAIT</div>
+                    <div class="btn-sublabel" id="life-countdown-label">NEXT SPIRIT IN</div>
+                </div>
+                <div id="life-countdown" style="font-size: 1.2em; color: #00ffff; font-weight: bold;">15:00</div>
+            </div>
+          </div>
+
+          <div class="close-link" onclick="window.game.toggleModal('lives-modal', false)" style="text-align: center; margin-top: 25px;">CLOSE</div>
+        </div>
+
+        <div id="settings-modal" class="modal-content">
+          <h2>SETTINGS</h2>
+          <div class="shop-grid">
+            <div class="shop-card" onclick="window.game.toggleMusic()">
+              <div class="shop-card-info">
+                <div class="shop-card-icon">🎵</div>
+                <div class="shop-card-text">
+                  <div class="shop-card-name">Music</div>
+                  <div class="shop-card-desc" id="music-status">On</div>
+                </div>
+              </div>
+            </div>
+            <div class="shop-card" onclick="window.game.toggleSFX()">
+              <div class="shop-card-info">
+                <div class="shop-card-icon">🔊</div>
+                <div class="shop-card-text">
+                  <div class="shop-card-name">Sound Effects</div>
+                  <div class="shop-card-desc" id="sfx-status">On</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <button class="btn" onclick="window.game.toggleModal('settings-modal', false)">CLOSE</button>
+        </div>
+
+        <div id="share-modal" class="modal-content crystal-frame">
+          <div class="crystal-glint"></div>
+          <h2 style="color: #00ffff;">GET FREE PINEAPPLES!</h2>
+          <div style="display: flex; justify-content: center; margin-bottom: 20px;">
+            <div class="hud-icon" style="background-image: url('assets/luxury-crystal-pineapple.webp'); width: 90px; height: 90px;"></div>
+          </div>
+          <p style="font-size: 1.2em; margin-bottom: 25px; line-height: 1.4;">Share with 5 Friends for <span style="color: #00ff88; font-weight: bold;">50 EXTRA PINEAPPLES!</span></p>
+          
+          <button class="btn play-btn-main juicy-pulse" style="width: 100%; margin-bottom: 15px;" onclick="window.game.shareGame()">SHARE NOW! 🚀</button>
+          
+          <button class="btn" style="background: rgba(255,255,255,0.05); width: 100%; font-size: 0.9em; border: 1px solid rgba(255,255,255,0.1); box-shadow: none;" onclick="window.game.toggleModal('share-modal', false)">MAYBE LATER</button>
+        </div>
+
+        <div id="spin-modal" class="modal-content crystal-frame" style="max-width: 450px;">
+          <div class="crystal-glint"></div>
+          <h2 style="color: #ffcc00; margin-bottom: 5px;">LUCKY FRUIT SPIN</h2>
+          <p style="font-size: 0.8em; opacity: 0.7; margin-bottom: 20px;">Claim your daily fruit power-ups!</p>
+          
+          <div class="wheel-container">
+            <div id="wheel" class="wheel">
+                <div class="wheel-segment" style="--i:0; --color: #ff0088;"><img src="assets/luxury-ruby-strawberry.webp" class="wheel-icon"></div>
+                <div class="wheel-segment" style="--i:1; --color: #00ffcc;"><img src="assets/fruit-emerald-png.webp" class="wheel-icon"></div>
+                <div class="wheel-segment" style="--i:2; --color: #ffcc00;"><img src="assets/golden-pear-gem.webp" class="wheel-icon"></div>
+                <div class="wheel-segment" style="--i:3; --color: #aa00ff;"><img src="assets/fruit-amethyst-png.webp" class="wheel-icon"></div>
+                <div class="wheel-segment" style="--i:4; --color: #0099ff;"><img src="assets/fruit-sapphire-png.webp" class="wheel-icon"></div>
+                <div class="wheel-segment" style="--i:5; --color: #ff6600;"><img src="assets/luxury-crystal-orange.webp" class="wheel-icon"></div>
+                <div class="wheel-segment" style="--i:6; --color: #00ff88;"><img src="assets/fruit-jade-png.webp" class="wheel-icon"></div>
+                <div class="wheel-segment" style="--i:7; --color: #ffffff;"><img src="assets/fruit-mega-png.webp" class="wheel-icon"></div>
+            </div>
+            <div class="wheel-pointer"></div>
+          </div>
+
+          <style>
+            .wheel-container {
+                position: relative;
+                width: 280px;
+                height: 280px;
+                margin: 0 auto 30px;
+                filter: drop-shadow(0 0 20px rgba(0,0,0,0.5));
+            }
+            .wheel {
+                width: 100%;
+                height: 100%;
+                background: #1a1a1a;
+                border-radius: 50%;
+                border: 8px solid #fff;
+                position: relative;
+                overflow: hidden;
+                transition: transform 4s cubic-bezier(0.15, 0, 0.15, 1);
+            }
+            .wheel-segment {
+                position: absolute;
+                width: 50%;
+                height: 50%;
+                background: var(--color);
+                transform-origin: 100% 100%;
+                transform: rotate(calc(var(--i) * 45deg)) skewY(-45deg);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border: 1px solid rgba(255,255,255,0.15);
+            }
+            .wheel-icon {
+                width: 42px;
+                height: 42px;
+                object-fit: contain;
+                transform: skewY(45deg) rotate(22.5deg) translateY(-58px);
+                filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));
+            }
+            .wheel-pointer {
+                position: absolute;
+                top: -15px;
+                left: 50%;
+                transform: translateX(-50%);
+                width: 40px;
+                height: 40px;
+                background: #ffcc00;
+                clip-path: polygon(50% 100%, 0 0, 100% 0);
+                z-index: 10;
+                filter: drop-shadow(0 5px 5px rgba(0,0,0,0.5));
+                border-bottom: 2px solid white;
+            }
+          </style>
+
+          <button id="spin-btn" class="btn play-btn-main juicy-pulse" style="width: 100%;" onclick="window.game.spinWheel()">SPIN NOW!</button>
+          <button id="spin-close-btn" class="btn" style="background: rgba(255,255,255,0.05); width: 100%; font-size: 0.9em; border: 1px solid rgba(255,255,255,0.1); box-shadow: none; margin-top: 15px;" onclick="window.game.toggleModal('spin-modal', false)">CLOSE</button>
+        </div>
+
+        <div id="level-preview-modal" class="modal-content cyan-glow-modal" style="max-width: 450px;">
+          <div class="preview-header">
+              <h2 id="preview-title" style="margin: 0; font-size: 2.8em; color: #fff; text-shadow: 0 2px 4px rgba(0,0,0,0.5); letter-spacing: 2px;">LEVEL 1</h2>
+              <div id="preview-stars" style="font-size: 3em; margin-bottom: 5px; color: #fff;">☆☆☆</div>
+          </div>
+          
+          <div class="mission-goal-box">
+              <div style="font-size: 0.7em; letter-spacing: 4px; color: #00ffff; margin-bottom: 15px; text-transform: uppercase; font-weight: bold;">GOAL</div>
+              <div id="preview-goals" style="display: flex; justify-content: center; gap: 20px; align-items: center;">
+                  <div class="goal-item" style="display: flex; align-items: center; gap: 15px;">
+                      <div id="preview-icon" class="crystal-icon large" style="width: 75px; height: 75px;"></div>
+                      <div id="preview-count" style="font-size: 4.5em; color: #fff; font-weight: bold; line-height: 1;">30</div>
+                  </div>
+                  <div id="preview-star-goal-item" class="goal-item" style="display: none; align-items: center; gap: 15px;">
+                      <div class="hud-icon hud-icon-stars" style="width: 65px; height: 65px;"></div>
+                      <div id="preview-star-count" style="font-size: 4.5em; color: #ffdd00; font-weight: bold; line-height: 1;">0</div>
+                  </div>
+              </div>
+              <div id="preview-goal-text" style="font-size: 1.1em; opacity: 1; margin-top: 15px; color: #00ffcc; font-weight: bold;">Collect Objectives</div>
+          </div>
+
+          <div class="modal-separator"></div>
+
+          <div style="text-align: center;">
+            <div class="booster-selection-row">
+              <div class="booster-icon-container" onclick="window.game.toggleBooster('shaker')" id="booster-preview-shaker">
+                <div class="hud-icon" style="background-image: url('assets/luxury-ruby-strawberry.webp'); width: 65px; height: 65px;"></div>
+                <div class="booster-badge-count" id="count-shaker">0</div>
+              </div>
+              <div class="booster-icon-container" onclick="window.game.toggleBooster('bomb')" id="booster-preview-bomb">
+                <div class="hud-icon" style="background-image: url('assets/fruit-sapphire-png.webp'); width: 65px; height: 65px;"></div>
+                <div class="booster-badge-count" id="count-bomb">0</div>
+              </div>
+              <div class="booster-icon-container" onclick="window.game.toggleBooster('prism')" id="booster-preview-prism">
+                <div class="hud-icon" style="background-image: url('assets/golden-pear-gem.webp'); width: 65px; height: 65px;"></div>
+                <div class="booster-badge-count" id="count-prism">0</div>
+              </div>
+            </div>
+          </div>
+
+          <button class="play-btn-cyan juicy-pulse" id="play-button">PLAY!</button>
+          <div class="close-link" onclick="window.game.toggleModal('level-preview-modal', false)" style="text-align: center; margin-top: 20px;">CLOSE</div>
+        </div>
+      </div>
+    </div>
+    <style>
+      .booster-row { display: flex; justify-content: center; gap: 15px; margin: 15px 0; }
+      .booster-item { 
+        width: 65px; height: 65px; 
+        background: radial-gradient(circle, rgba(255, 0, 136, 0.4) 0%, rgba(255, 0, 136, 0) 70%); 
+        border-radius: 50%; 
+        display: flex; align-items: center; justify-content: center; 
+        border: none;
+        cursor: pointer; position: relative;
+        transition: transform 0.2s, background 0.2s;
+      }
+      .booster-item.selected { 
+        background: radial-gradient(circle, rgba(255, 0, 136, 0.8) 0%, rgba(255, 0, 136, 0) 75%); 
+        transform: scale(1.1);
+        box-shadow: 0 0 15px rgba(255, 0, 136, 0.5);
+      }
+      .booster-item.disabled { opacity: 0.4; }
+      .booster-count {
+        position: absolute;
+        bottom: -8px; right: -8px;
+        background: #ffcc00; color: #5e00b3;
+        font-size: 0.6em; width: 22px; height: 22px;
+        border-radius: 50%; display: flex; align-items: center; justify-content: center;
+        border: 2px solid white; font-weight: bold;
+      }
+      .preview-section { margin: 15px 0; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px; }
+      
+      @keyframes gem-pulse {
+        0% { transform: scale(1); filter: brightness(1); }
+        50% { transform: scale(1.3); filter: brightness(2) drop-shadow(0 0 10px gold); }
+        100% { transform: scale(1); filter: brightness(1); }
+      }
+      .gem-spend-anim { animation: gem-pulse 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+
+      @keyframes combo-float {
+        0% { transform: translate(-50%, -50%) scale(0.5) rotate(-10deg); opacity: 0; }
+        20% { transform: translate(-50%, -80%) scale(1.2) rotate(5deg); opacity: 1; }
+        80% { transform: translate(-50%, -100%) scale(1) rotate(0deg); opacity: 1; }
+        100% { transform: translate(-50%, -120%) scale(0.8); opacity: 0; }
+      }
+    </style>
+    <div id="toast-container" style="position: fixed; top: 100px; left: 50%; transform: translateX(-50%); z-index: 1000; pointer-events: none;"></div>
+    
+    <style>
+      #toast-container { display: flex; flex-direction: column; gap: 10px; align-items: center; }
+      .toast { 
+        background: rgba(0,0,0,0.85); backdrop-filter: blur(10px); padding: 12px 25px; border-radius: 20px; 
+        color: #00ffff; border: 2px solid #00ffff; font-size: 1em; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        animation: toast-in 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+      }
+      .toast.error { color: #ff4444; border-color: #ff4444; }
+      @keyframes toast-in { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+
+      .pulse { animation: pulse-anim 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+      @keyframes pulse-anim {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.3); filter: brightness(1.5); }
+        100% { transform: scale(1); }
+      }
+
+      .combo-text {
+        font-family: 'Fredoka One', cursive;
+        pointer-events: none;
+        user-select: none;
+        white-space: nowrap;
+      }
+
+      .special-combo {
+        animation: combo-float 1.2s ease-out forwards, glow-pulse 0.6s infinite alternate !important;
+        letter-spacing: 2px;
+        filter: drop-shadow(0 0 10px gold);
+      }
+
+      @keyframes glow-pulse {
+        from { text-shadow: 0 0 10px #fff, 0 0 20px #ffcc00; transform: translate(-50%, -50%) scale(1); }
+        to { text-shadow: 0 0 20px #fff, 0 0 40px #ffcc00; transform: translate(-50%, -50%) scale(1.1); }
+      }
+
+      .shop-grid { display: flex; flex-direction: column; gap: 10px; margin: 20px 0; text-align: left; }
+      .shop-item { 
+        background: rgba(255,255,255,0.1); padding: 12px 20px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.2);
+        display: flex; justify-content: space-between; align-items: center;
+      }
+      .shop-item .price-badge { background: #ffcc00; color: #5e00b3; padding: 4px 12px; border-radius: 12px; font-weight: bold; font-size: 0.9em; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+      .shop-item.clickable { cursor: pointer; transition: transform 0.1s; }
+      .shop-item.clickable:active { transform: scale(0.95); background: rgba(255,255,255,0.3); }
+      @keyframes combo-pulse-anim {
+        0% { transform: translateX(-50%) scale(1); }
+        50% { transform: translateX(-50%) scale(1.4); filter: brightness(1.5); }
+        100% { transform: translateX(-50%) scale(1); }
+      }
+      .combo-pulse { animation: combo-pulse-anim 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+    </style>
+    <script type="module" src="main.js"></script>
+    <script src="https://storage.googleapis.com/rosebud_staticfiles/ChatManager.js"></script>
+    <script src="https://storage.googleapis.com/rosebud_staticfiles/ImageGenerator.js"></script>
+    <script src="https://storage.googleapis.com/rosebud_staticfiles/ProgressLogger.js"></script>
+    <script src="https://storage.googleapis.com/rosebud_staticfiles/OGP.js"></script>
+  
+<script>
+    (() => {
+        const splashRoot = document.getElementById('rosebud-exported-splash');
+        if (!splashRoot) return;
+
+        let isReady = false;
+        let isMinimumVisibleTimeElapsed = false;
+        let isHidden = false;
+
+        const maybeHideSplash = () => {
+            if (isHidden || !isReady || !isMinimumVisibleTimeElapsed) return;
+
+            isHidden = true;
+            splashRoot.classList.add('is-hiding');
+            window.setTimeout(() => splashRoot.remove(), 500);
+        };
+
+        const markReady = () => {
+            isReady = true;
+            maybeHideSplash();
+        };
+
+        window.setTimeout(() => {
+            isMinimumVisibleTimeElapsed = true;
+            maybeHideSplash();
+        }, 1000);
+
+        if (document.readyState === 'complete') {
+            markReady();
+        } else {
+            window.addEventListener('load', markReady, { once: true });
+        }
+
+        
+    })();
+</script></body>
+</html>
