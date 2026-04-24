@@ -1,0 +1,5 @@
+Final Production Build v1.0.0. 💎
+- 100 levels of crystalline Match-3 saga.
+- New biomes and AAA resin shaders.
+- Procedural audio by Tone.js.
+- Localized in English and Arabic.
