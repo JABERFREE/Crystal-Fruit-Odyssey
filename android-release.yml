@@ -1,0 +1,53 @@
+name: Android Release
+
+on:
+  push:
+    tags:
+      - 'v*' # Trigger on version tags (e.g., v1.0.0)
+
+jobs:
+  build:
+    name: Build and Sign APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Set up Ruby
+        uses: actions/setup-ruby@v1
+        with:
+          ruby-version: '3.0'
+
+      - name: Install Fastlane
+        run: gem install fastlane
+
+      - name: Decode Keystore
+        run: |
+          mkdir -p certs
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > certs/puzzle-odyssey.keystore
+
+      - name: Decode Google Play Service Account JSON
+        run: |
+          echo '${{ secrets.GOOGLE_PLAY_JSON_KEY }}' > certs/google-play-api.json
+
+      - name: Build and Deploy to Google Play
+        run: bundle exec fastlane android internal
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          ANDROID_KEY_ALIAS: "puzzle_odyssey_alias"
+
+      - name: Upload Build Artifacts (APK & AAB)
+        uses: actions/upload-artifact@v3
+        with:
+          name: crystal-fruit-odyssey-builds
+          path: |
+            android/app/build/outputs/bundle/release/app-release.aab
+            android/app/build/outputs/apk/release/app-release.apk
