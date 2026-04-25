@@ -1,5 +1,5 @@
 
-name: NexApp Deep Search Build
+name: NexApp Official Build
 
 on:
   push:
@@ -10,55 +10,55 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
 
-      - name: Hunt and Gather Assets
+      - name: Clean and Prepare Workspace
         run: |
+          # Remove old artifacts to prevent recursion errors
+          rm -rf www android
           mkdir -p www
           
-          # البحث عن مكان ملف index.html الحقيقي ونقل كل ما بجانبه إلى www
-          REAL_PATH=$(find . -name "index.html" -not -path "./www/*" | head -n 1 | xargs dirname)
-          echo "Found game files at: $REAL_PATH"
+          # Copy folders only if they exist in root
+          for dir in assets scenes scripts systems entities config; do
+            if [ -d "$dir" ]; then
+              cp -rv "$dir" www/
+            fi
+          done
           
-          if [ -n "$REAL_PATH" ]; then
-            cp -rv $REAL_PATH/* www/
-          else
-            echo "Error: index.html not found anywhere!"
-            exit 1
-          fi
+          # Copy individual core files
+          cp -v index.html *.js *.md www/ || true
           
-          echo "--- FINAL CHECK ---"
+          echo "Workspace prepared. Final folder size:"
           du -sh www/
-          ls www/
 
-      - name: Build Android APK
+      - name: Initialize Capacitor
         run: |
           npm init -y
           npm install @capacitor/core@latest @capacitor/cli@latest @capacitor/android@latest
           npx cap init "Crystal Fruit" "com.nexapp.crystal" --web-dir www
-          rm -rf android
           npx cap add android
           npx cap sync android
 
-      - name: Set up JDK 21
+      - name: Setup Java JDK 21
         uses: actions/setup-java@v4
         with:
           java-version: '21'
           distribution: 'temurin'
 
-      - name: Compile Final APK
+      - name: Build Android APK
         run: |
           cd android
           chmod +x gradlew
           ./gradlew assembleDebug
 
-      - name: Export Working APK
+      - name: Export APK File
         uses: actions/upload-artifact@v4
         with:
-          name: NexApp-Real-Size-APK
+          name: NexApp-Crystal-Fruit-V1
           path: android/app/build/outputs/apk/debug/app-debug.apk
