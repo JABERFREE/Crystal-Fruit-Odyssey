@@ -1,4 +1,5 @@
-name: NexApp Master Build
+
+name: NexApp Deep Search Build
 
 on:
   push:
@@ -16,31 +17,31 @@ jobs:
         with:
           node-version: 22
 
-      - name: Prepare Game Assets
+      - name: Hunt and Gather Assets
         run: |
           mkdir -p www
-          # نسخ المجلدات المرفوعة يدوياً
-          [ -d "assets" ] && cp -rv assets www/ || echo "No direct assets"
-          [ -d "scenes" ] && cp -rv scenes www/ || echo "No direct scenes"
-          [ -d "scripts" ] && cp -rv scripts www/ || echo "No direct scripts"
-          [ -d "systems" ] && cp -rv systems www/ || echo "No direct systems"
-          [ -d "entities" ] && cp -rv entities www/ || echo "No direct entities"
           
-          # نسخ ملفات الويب الأساسية
-          cp -v index.html main.js config.js www/ || true
+          # البحث عن مكان ملف index.html الحقيقي ونقل كل ما بجانبه إلى www
+          REAL_PATH=$(find . -name "index.html" -not -path "./www/*" | head -n 1 | xargs dirname)
+          echo "Found game files at: $REAL_PATH"
           
-          echo "Final size of game folder:"
+          if [ -n "$REAL_PATH" ]; then
+            cp -rv $REAL_PATH/* www/
+          else
+            echo "Error: index.html not found anywhere!"
+            exit 1
+          fi
+          
+          echo "--- FINAL CHECK ---"
           du -sh www/
+          ls www/
 
       - name: Build Android APK
         run: |
           npm init -y
           npm install @capacitor/core@latest @capacitor/cli@latest @capacitor/android@latest
           npx cap init "Crystal Fruit" "com.nexapp.crystal" --web-dir www
-          
-          # الحل الجذري: مسح مجلد أندرويد القديم إذا كان موجوداً لتجنب الخطأ
           rm -rf android
-          
           npx cap add android
           npx cap sync android
 
@@ -59,5 +60,5 @@ jobs:
       - name: Export Working APK
         uses: actions/upload-artifact@v4
         with:
-          name: NexApp-Success-APK
+          name: NexApp-Real-Size-APK
           path: android/app/build/outputs/apk/debug/app-debug.apk
