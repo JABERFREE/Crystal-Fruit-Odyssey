@@ -1,4 +1,4 @@
-name: NexApp Final Success (JDK 21)
+name: NexApp Final Asset-Fix
 
 on:
   push:
@@ -11,44 +11,43 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Node.js (V22)
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
 
-      - name: Clean and Build Structure
+      - name: Locate and Copy All Files
         run: |
-          # 1. تنظيف شامل
-          rm -rf android package.json www capacitor.config.json
-          
-          # 2. إنشاء الهوية وتثبيت الأدوات
+          rm -rf android package.json www
           npm init -y
-          npm install @capacitor/core@latest @capacitor/cli@latest @capacitor/android@latest
-          
-          # 3. إنشاء المجلد ونقل ملفات Rosebud
           mkdir www
-          cp -v index.html main.js config.js instant_db.md native-build-config.js www/ || true
-          [ -d "assets" ] && cp -rv assets www/ || echo "No assets found"
           
-          # 4. بناء الهيكل والمزامنة
+          # نسخ الملفات البرمجية الأساسية
+          cp -v *.html *.js *.md www/ || true
+          
+          # البحث الذكي عن مجلد الصور (سواء كان assets أو Assets أو أي مجلد آخر)
+          # سنقوم بنسخ أي مجلد يحتوي على صور لضمان عمل اللعبة
+          find . -maxdepth 1 -type d -not -path '*/.*' -not -path './www' -not -path './node_modules' -exec cp -rv {} www/ \;
+
+          npm install @capacitor/core@latest @capacitor/cli@latest @capacitor/android@latest
           npx cap init "Crystal Fruit Odyssey" "com.nexapp.crystal.fruit" --web-dir www
           npx cap add android
           npx cap sync android
 
-      - name: Set up JDK 21 # التحديث الجوهري هنا
+      - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
           java-version: '21'
           distribution: 'temurin'
 
-      - name: Build APK File
+      - name: Build Final APK
         run: |
           cd android
           chmod +x gradlew
           ./gradlew assembleDebug
 
-      - name: Export Final APK
+      - name: Export Working APK
         uses: actions/upload-artifact@v4
         with:
-          name: NexApp-Crystal-Fruit-Success
+          name: NexApp-Crystal-Fruit-Full
           path: android/app/build/outputs/apk/debug/app-debug.apk
