@@ -1,5 +1,4 @@
-
-name: NexApp Ultimate Success
+name: NexApp Official Clean Build
 
 on:
   push:
@@ -10,41 +9,40 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Code
+      - name: Checkout Source Code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Setup Node environment
         uses: actions/setup-node@v4
         with:
           node-version: 22
 
-      - name: Intelligent Workspace Preparation
+      - name: Extract Assets and Prepare Web Folder
         run: |
-          # 1. Clean everything
+          # Clean old folders
           rm -rf www android
           mkdir -p www
           
-          # 2. Find the REAL location of game files
-          # We search for index.html wherever it is hidden
-          GAME_DIR=$(find . -name "index.html" -not -path "*/www/*" -not -path "*/node_modules/*" | head -n 1 | xargs dirname)
-          
-          echo "Target detected at: $GAME_DIR"
-          
-          # 3. Copy everything from that location to www
-          if [ -n "$GAME_DIR" ]; then
-            cp -rv $GAME_DIR/* www/
-          else
-            echo "CRITICAL ERROR: No game files found!"
-            exit 1
+          # Unzip the main asset file if exists
+          if [ -f "NexApp-Crystal-Fruit-Full.zip" ]; then
+            echo "Extracting game assets from ZIP..."
+            unzip -o NexApp-Crystal-Fruit-Full.zip -d www/
           fi
           
-          # 4. Final Verification
-          echo "Folder Check:"
-          ls -R www/assets || echo "Assets folder still missing in www!"
-          echo "Final size of build folder:"
+          # Copy loose images and web files from root to www
+          cp -v *.png *.webp *.html *.js www/ || true
+          
+          # Copy direct directories if they exist
+          for folder in assets scenes scripts systems entities config; do
+            if [ -d "$folder" ]; then
+              cp -rv "$folder" www/
+            fi
+          done
+
+          echo "Workspace ready. Checking final size:"
           du -sh www/
 
-      - name: Initialize and Build Android
+      - name: Initialize Android Project
         run: |
           npm init -y
           npm install @capacitor/core@latest @capacitor/cli@latest @capacitor/android@latest
@@ -52,20 +50,20 @@ jobs:
           npx cap add android
           npx cap sync android
 
-      - name: Setup Java
+      - name: Setup Java Development Kit
         uses: actions/setup-java@v4
         with:
           java-version: '21'
           distribution: 'temurin'
 
-      - name: Final APK Compilation
+      - name: Compile Debug APK
         run: |
           cd android
           chmod +x gradlew
           ./gradlew assembleDebug
 
-      - name: Export High Volume APK
+      - name: Export Final APK
         uses: actions/upload-artifact@v4
         with:
-          name: NexApp-Crystal-Fruit-Final
+          name: NexApp-Crystal-Fruit-V1
           path: android/app/build/outputs/apk/debug/app-debug.apk
