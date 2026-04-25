@@ -1,4 +1,4 @@
-name: NexApp Ultimate Builder (Auto-Clean)
+name: NexApp Zero-to-APK (Final Fix)
 
 on:
   push:
@@ -11,20 +11,23 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Clean Old Files
-        run: |
-          # هذا السطر هو "الممحاة" التي ستمسح المجلد القديم تلقائياً
-          rm -rf android 
-          echo "Old android folder removed successfully!"
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
 
-      - name: Create Fresh Android Structure
+      - name: Initialize Project & Install Capacitor
         run: |
+          # 1. تنظيف شامل لأي ملفات قديمة تسبب تعليق
+          rm -rf android package.json package-lock.json capacitor.config.json
+          
+          # 2. صناعة "الهوية" المفقودة من Rosebud (package.json)
+          npm init -y
+          
+          # 3. تثبيت أدوات تحويل الويب إلى أندرويد
           npm install @capacitor/core @capacitor/cli @capacitor/android
+          
+          # 4. بناء هيكل الأندرويد لبراند NexApp
           npx cap init "Crystal Fruit Odyssey" "com.nexapp.crystal.fruit" --web-dir .
           npx cap add android
 
@@ -34,14 +37,14 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Final Build APK
+      - name: Build Final APK
         run: |
           cd android
           chmod +x gradlew
           ./gradlew assembleDebug
 
-      - name: Download Your APK
+      - name: Upload NexApp APK
         uses: actions/upload-artifact@v4
         with:
-          name: NexApp-Final-Game
+          name: Crystal-Fruit-Final-Release
           path: android/app/build/outputs/apk/debug/app-debug.apk
