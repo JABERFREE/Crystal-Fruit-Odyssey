@@ -1,12 +1,14 @@
-name: NexApp Final Asset-Fix
+name: NexApp Final Zip-Fix
 
 on:
   push:
     branches: [ "main" ]
   workflow_dispatch:
 
-jobs:env:
+env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
   build:
     runs-on: ubuntu-latest
     steps:
@@ -17,19 +19,30 @@ jobs:env:
         with:
           node-version: 22
 
-      - name: Locate and Copy All Files
+      - name: Unzip and Prepare Assets
         run: |
+          # 1. تنظيف
           rm -rf android package.json www
-          npm init -y
           mkdir www
           
-          # نسخ الملفات البرمجية الأساسية
-          cp -v *.html *.js *.md www/ || true
+          # 2. فك ضغط ملف الكنز (الصور والملفات)
+          if [ -f "NexApp-Crystal-Fruit-Full.zip" ]; then
+            unzip -o NexApp-Crystal-Fruit-Full.zip
+            echo "Zip extracted successfully!"
+          fi
           
-          # البحث الذكي عن مجلد الصور (سواء كان assets أو Assets أو أي مجلد آخر)
-          # سنقوم بنسخ أي مجلد يحتوي على صور لضمان عمل اللعبة
-          find . -maxdepth 1 -type d -not -path '*/.*' -not -path './www' -not -path './node_modules' -exec cp -rv {} www/ \;
+          # 3. نقل كل شيء إلى مجلد الويب www
+          cp -v *.html *.js *.md www/ || true
+          [ -d "assets" ] && cp -rv assets www/ || echo "No assets"
+          [ -d "config" ] && cp -rv config www/ || echo "No config"
+          [ -d "entities" ] && cp -rv entities www/ || echo "No entities"
+          [ -d "scenes" ] && cp -rv scenes www/ || echo "No scenes"
+          [ -d "scripts" ] && cp -rv scripts www/ || echo "No scripts"
+          [ -d "systems" ] && cp -rv systems www/ || echo "No systems"
+          [ -d "rosie" ] && cp -rv rosie www/ || echo "No rosie"
 
+          # 4. بناء الأندرويد
+          npm init -y
           npm install @capacitor/core@latest @capacitor/cli@latest @capacitor/android@latest
           npx cap init "Crystal Fruit Odyssey" "com.nexapp.crystal.fruit" --web-dir www
           npx cap add android
@@ -41,7 +54,7 @@ jobs:env:
           java-version: '21'
           distribution: 'temurin'
 
-      - name: Build Final APK
+      - name: Build Full APK
         run: |
           cd android
           chmod +x gradlew
@@ -50,5 +63,5 @@ jobs:env:
       - name: Export Working APK
         uses: actions/upload-artifact@v4
         with:
-          name: NexApp-Crystal-Fruit-Full
+          name: NexApp-Crystal-Fruit-Final
           path: android/app/build/outputs/apk/debug/app-debug.apk
