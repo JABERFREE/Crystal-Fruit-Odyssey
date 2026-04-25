@@ -1,5 +1,5 @@
 
-name: NexApp Sniper Fix
+name: NexApp Final Recovery
 
 on:
   push:
@@ -20,53 +20,41 @@ jobs:
         with:
           node-version: 22
 
-      - name: Extract and Force Move Assets
+      - name: Strategic Extraction
         run: |
-          # 1. تنظيف وبناء المجلد الهدف
           rm -rf android package.json www
           mkdir -p www
           
-          # 2. فك الضغط (إذا وجد الملف)
+          # 1. فك الضغط في مجلد مؤقت
           if [ -f "NexApp-Crystal-Fruit-Full.zip" ]; then
-            unzip -o NexApp-Crystal-Fruit-Full.zip -d temp_folder
-            echo "Zip extracted to temp_folder"
+            unzip -o NexApp-Crystal-Fruit-Full.zip -d temp_extract
           fi
           
-          # 3. القنص (البحث عن المجلدات في أي مكان ونقل محتوياتها لـ www)
-          # سنبحث عن المجلدات الأساسية وننقلها
-          find . -type d -name "assets" -exec cp -rv {}/. www/assets/ \; || true
-          find . -type d -name "config" -exec cp -rv {}/. www/config/ \; || true
-          find . -type d -name "scenes" -exec cp -rv {}/. www/scenes/ \; || true
-          find . -type d -name "scripts" -exec cp -rv {}/. www/scripts/ \; || true
-          find . -type d -name "systems" -exec cp -rv {}/. www/systems/ \; || true
+          # 2. "البحث الذكي": البحث عن المجلد الذي يحتوي على index.html
+          # ونقل كل محتوياته إلى www
+          ROOT_DIR=$(find temp_extract -name "index.html" -exec dirname {} \;)
+          echo "Found game root at: $ROOT_DIR"
+          cp -rv $ROOT_DIR/* www/
           
-          # 4. نقل الملفات البرمجية الأساسية
-          cp -v *.html *.js *.md www/ || true
-          
-          # 5. فحص الحجم النهائي لـ www (سيظهر في اللوج)
-          echo "Final size of WWW folder:"
+          # 3. التأكد من وجود المجلدات الأساسية في www
+          ls -R www/
+          echo "FINAL SIZE CHECK:"
           du -sh www/
 
-          # 6. بناء الأندرويد
+          # 4. بناء الأندرويد
           npm init -y
           npm install @capacitor/core@latest @capacitor/cli@latest @capacitor/android@latest
-          npx cap init "Crystal Fruit Odyssey" "com.nexapp.crystal.fruit" --web-dir www
+          npx cap init "Crystal Fruit" "com.nexapp.crystal" --web-dir www
           npx cap add android
           npx cap sync android
 
-      - name: Set up JDK 21
-        uses: actions/setup-java@v4
-        with:
-          java-version: '21'
-          distribution: 'temurin'
-
-      - name: Build Massive APK
+      - name: Build APK
         run: |
           cd android
           chmod +x gradlew
           ./gradlew assembleDebug
 
-      - name: Export Full APK
+      - name: Export APK
         uses: actions/upload-artifact@v4
         with:
           name: NexApp-Crystal-Fruit-Final
