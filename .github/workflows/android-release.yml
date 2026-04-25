@@ -1,4 +1,3 @@
-
 name: NexApp Master Build
 
 on:
@@ -20,20 +19,14 @@ jobs:
       - name: Prepare Game Assets
         run: |
           mkdir -p www
-          # 1. إذا وجد مجلدات مفتوحة، ينسخها
+          # نسخ المجلدات المرفوعة يدوياً
           [ -d "assets" ] && cp -rv assets www/ || echo "No direct assets"
           [ -d "scenes" ] && cp -rv scenes www/ || echo "No direct scenes"
           [ -d "scripts" ] && cp -rv scripts www/ || echo "No direct scripts"
           [ -d "systems" ] && cp -rv systems www/ || echo "No direct systems"
           [ -d "entities" ] && cp -rv entities www/ || echo "No direct entities"
           
-          # 2. إذا وجد ملف ZIP، يفكه وينسخ ما بداخله (للاحتياط)
-          if [ -f "NexApp-Crystal-Fruit-Full.zip" ]; then
-            unzip -o NexApp-Crystal-Fruit-Full.zip -d temp_zip
-            cp -rv temp_zip/* www/ || true
-          fi
-          
-          # 3. نسخ ملفات الويب الأساسية
+          # نسخ ملفات الويب الأساسية
           cp -v index.html main.js config.js www/ || true
           
           echo "Final size of game folder:"
@@ -44,6 +37,10 @@ jobs:
           npm init -y
           npm install @capacitor/core@latest @capacitor/cli@latest @capacitor/android@latest
           npx cap init "Crystal Fruit" "com.nexapp.crystal" --web-dir www
+          
+          # الحل الجذري: مسح مجلد أندرويد القديم إذا كان موجوداً لتجنب الخطأ
+          rm -rf android
+          
           npx cap add android
           npx cap sync android
 
