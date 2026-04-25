@@ -1,5 +1,4 @@
-
-name: NexApp Official Build
+name: NexApp Ultimate Success
 
 on:
   push:
@@ -18,26 +17,33 @@ jobs:
         with:
           node-version: 22
 
-      - name: Clean and Prepare Workspace
+      - name: Intelligent Workspace Preparation
         run: |
-          # Remove old artifacts to prevent recursion errors
+          # 1. Clean everything
           rm -rf www android
           mkdir -p www
           
-          # Copy folders only if they exist in root
-          for dir in assets scenes scripts systems entities config; do
-            if [ -d "$dir" ]; then
-              cp -rv "$dir" www/
-            fi
-          done
+          # 2. Find the REAL location of game files
+          # We search for index.html wherever it is hidden
+          GAME_DIR=$(find . -name "index.html" -not -path "*/www/*" -not -path "*/node_modules/*" | head -n 1 | xargs dirname)
           
-          # Copy individual core files
-          cp -v index.html *.js *.md www/ || true
+          echo "Target detected at: $GAME_DIR"
           
-          echo "Workspace prepared. Final folder size:"
+          # 3. Copy everything from that location to www
+          if [ -n "$GAME_DIR" ]; then
+            cp -rv $GAME_DIR/* www/
+          else
+            echo "CRITICAL ERROR: No game files found!"
+            exit 1
+          fi
+          
+          # 4. Final Verification
+          echo "Folder Check:"
+          ls -R www/assets || echo "Assets folder still missing in www!"
+          echo "Final size of build folder:"
           du -sh www/
 
-      - name: Initialize Capacitor
+      - name: Initialize and Build Android
         run: |
           npm init -y
           npm install @capacitor/core@latest @capacitor/cli@latest @capacitor/android@latest
@@ -45,20 +51,20 @@ jobs:
           npx cap add android
           npx cap sync android
 
-      - name: Setup Java JDK 21
+      - name: Setup Java
         uses: actions/setup-java@v4
         with:
           java-version: '21'
           distribution: 'temurin'
 
-      - name: Build Android APK
+      - name: Final APK Compilation
         run: |
           cd android
           chmod +x gradlew
           ./gradlew assembleDebug
 
-      - name: Export APK File
+      - name: Export High Volume APK
         uses: actions/upload-artifact@v4
         with:
-          name: NexApp-Crystal-Fruit-V1
+          name: NexApp-Crystal-Fruit-Final
           path: android/app/build/outputs/apk/debug/app-debug.apk
