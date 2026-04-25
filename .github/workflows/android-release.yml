@@ -1,13 +1,10 @@
 
-name: NexApp Final Recovery
+name: NexApp Master Build
 
 on:
   push:
     branches: [ "main" ]
   workflow_dispatch:
-
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   build:
@@ -20,42 +17,50 @@ jobs:
         with:
           node-version: 22
 
-      - name: Strategic Extraction
+      - name: Prepare Game Assets
         run: |
-          rm -rf android package.json www
           mkdir -p www
+          # 1. إذا وجد مجلدات مفتوحة، ينسخها
+          [ -d "assets" ] && cp -rv assets www/ || echo "No direct assets"
+          [ -d "scenes" ] && cp -rv scenes www/ || echo "No direct scenes"
+          [ -d "scripts" ] && cp -rv scripts www/ || echo "No direct scripts"
+          [ -d "systems" ] && cp -rv systems www/ || echo "No direct systems"
+          [ -d "entities" ] && cp -rv entities www/ || echo "No direct entities"
           
-          # 1. فك الضغط في مجلد مؤقت
+          # 2. إذا وجد ملف ZIP، يفكه وينسخ ما بداخله (للاحتياط)
           if [ -f "NexApp-Crystal-Fruit-Full.zip" ]; then
-            unzip -o NexApp-Crystal-Fruit-Full.zip -d temp_extract
+            unzip -o NexApp-Crystal-Fruit-Full.zip -d temp_zip
+            cp -rv temp_zip/* www/ || true
           fi
           
-          # 2. "البحث الذكي": البحث عن المجلد الذي يحتوي على index.html
-          # ونقل كل محتوياته إلى www
-          ROOT_DIR=$(find temp_extract -name "index.html" -exec dirname {} \;)
-          echo "Found game root at: $ROOT_DIR"
-          cp -rv $ROOT_DIR/* www/
+          # 3. نسخ ملفات الويب الأساسية
+          cp -v index.html main.js config.js www/ || true
           
-          # 3. التأكد من وجود المجلدات الأساسية في www
-          ls -R www/
-          echo "FINAL SIZE CHECK:"
+          echo "Final size of game folder:"
           du -sh www/
 
-          # 4. بناء الأندرويد
+      - name: Build Android APK
+        run: |
           npm init -y
           npm install @capacitor/core@latest @capacitor/cli@latest @capacitor/android@latest
           npx cap init "Crystal Fruit" "com.nexapp.crystal" --web-dir www
           npx cap add android
           npx cap sync android
 
-      - name: Build APK
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Compile Final APK
         run: |
           cd android
           chmod +x gradlew
           ./gradlew assembleDebug
 
-      - name: Export APK
+      - name: Export Working APK
         uses: actions/upload-artifact@v4
         with:
-          name: NexApp-Crystal-Fruit-Final
+          name: NexApp-Success-APK
           path: android/app/build/outputs/apk/debug/app-debug.apk
