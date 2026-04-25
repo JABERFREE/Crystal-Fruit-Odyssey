@@ -1,4 +1,4 @@
-name: NexApp Final Bulletproof Builder (V22)
+name: NexApp Final Success (JDK 21)
 
 on:
   push:
@@ -11,10 +11,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Node.js (Update to 22)
+      - name: Setup Node.js (V22)
         uses: actions/setup-node@v4
         with:
-          node-version: 22 # تم التحديث هنا ليتوافق مع طلب الأداة
+          node-version: 22
 
       - name: Clean and Build Structure
         run: |
@@ -25,21 +25,20 @@ jobs:
           npm init -y
           npm install @capacitor/core@latest @capacitor/cli@latest @capacitor/android@latest
           
-          # 3. إنشاء المجلد المطلوب ونقل الملفات
+          # 3. إنشاء المجلد ونقل ملفات Rosebud
           mkdir www
           cp -v index.html main.js config.js instant_db.md native-build-config.js www/ || true
-          # سنحاول نسخ مجلد الأصول إذا كان موجوداً
-          [ -d "assets" ] && cp -rv assets www/ || echo "No assets folder found, skipping..."
+          [ -d "assets" ] && cp -rv assets www/ || echo "No assets found"
           
           # 4. بناء الهيكل والمزامنة
           npx cap init "Crystal Fruit Odyssey" "com.nexapp.crystal.fruit" --web-dir www
           npx cap add android
           npx cap sync android
 
-      - name: Set up JDK 17
+      - name: Set up JDK 21 # التحديث الجوهري هنا
         uses: actions/setup-java@v4
         with:
-          java-version: '17'
+          java-version: '21'
           distribution: 'temurin'
 
       - name: Build APK File
