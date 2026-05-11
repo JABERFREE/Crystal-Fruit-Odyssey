@@ -1,0 +1,12 @@
+{
+  "images": [
+    {
+      "base_image": "assets/sapphire-crystal-pineapple-marker.webp",
+      "platform": "ios"
+    },
+    {
+      "base_image": "assets/sapphire-crystal-pineapple-marker.webp",
+      "platform": "android"
+    }
+  ]
+}

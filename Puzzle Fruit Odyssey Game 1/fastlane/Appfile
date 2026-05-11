@@ -1,0 +1,11 @@
+# Crystal Fruit Odyssey - App Store Connect Configuration
+# NexApp Production Build Utility
+
+app_identifier("com.nexapp.crystalfruitodyssey")
+apple_id("production@nexapp.com")
+itc_team_id("NEXAPP_ITC_TEAM")
+team_id("NEXAPP_TEAM_ID")
+
+# For Android distribution
+package_name("com.nexapp.crystalfruitodyssey")
+json_key_file("certs/google-play-api.json")

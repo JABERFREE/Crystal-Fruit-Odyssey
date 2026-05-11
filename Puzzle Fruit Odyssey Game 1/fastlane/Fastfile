@@ -1,0 +1,133 @@
+# Fastlane Configuration for Crystal Fruit Odyssey
+# Managed by NexApp Production Pipeline
+
+default_platform(:ios)
+
+platform :ios do
+  desc "Push a new release build to the App Store"
+  lane :release do
+    # 1. Sync Certificates and Provisioning Profiles (Match)
+    # Using 'match' for shared team development and code signing
+    match(type: "appstore", readonly: true)
+
+    # 2. Increment Build Number based on current App Store version
+    increment_build_number(
+      build_number: latest_testflight_build_number + 1,
+      xcodeproj: "ios/CrystalFruitOdyssey.xcodeproj"
+    )
+
+    # 3. Build the Archive (Gym)
+    # Optimized with the crystalline-resin build flags
+    build_app(
+      workspace: "ios/CrystalFruitOdyssey.xcworkspace",
+      scheme: "CrystalFruitOdyssey",
+      clean: true,
+      output_directory: "build/ios",
+      output_name: "CrystalFruitOdyssey.ipa",
+      export_method: "app-store",
+      export_options: {
+        provisioningProfiles: {
+          "com.nexapp.crystalfruitodyssey" => "match AppStore com.nexapp.crystalfruitodyssey"
+        }
+      }
+    )
+
+    # 4. Upload to App Store Connect / TestFlight (Pilot)
+    upload_to_testflight(
+      skip_waiting_for_build_processing: true
+    )
+    
+    # Optional: Submit for Review
+    # deliver(force: true, skip_screenshots: true, skip_metadata: false)
+  end
+
+  desc "Submit a beta build to TestFlight"
+  lane :beta do
+    match(type: "development")
+    build_app(scheme: "CrystalFruitOdyssey", export_method: "development")
+    upload_to_testflight
+  end
+
+  desc "Generate all App Icons from the master Sapphire Pineapple asset"
+  lane :generate_icons do
+    # Using the appicon plugin to generate all required iOS sizes
+    appicon(
+      show_output: true,
+      config_path: "fastlane/Appicon.json",
+      project_name: "CrystalFruitOdyssey"
+    )
+  end
+
+  desc "Capture and Frame localized screenshots for App Store and Google Play"
+  lane :screenshots do
+    # 1. Capture iOS Screenshots (Snapshot)
+    snapshot(
+      workspace: "ios/CrystalFruitOdyssey.xcworkspace",
+      scheme: "CrystalFruitOdyssey",
+      languages: ["en-US", "ar-SA"],
+      output_directory: "fastlane/screenshots/ios",
+      clear_previous_screenshots: true
+    )
+
+    # 2. Capture Android Screenshots (Screengrab)
+    # Outputting directly to the metadata structure for automated Play Store sync
+    screengrab(
+      app_package_name: "com.nexapp.crystalfruitodyssey",
+      locales: ["en-US", "ar-SA"],
+      output_directory: "fastlane/metadata/android",
+      clear_previous_screenshots: true
+    )
+
+    # 3. Add Device Frames and Text (Frameit / Framer)
+    # This adds professional AAA-grade device frames and localized captions
+    # We frame everything inside the metadata directory for final delivery
+    frameit(
+      path: "fastlane/metadata/android",
+      silver: true 
+    )
+  end
+end
+
+platform :android do
+  desc "Submit a new Internal track build to Google Play"
+  lane :internal do
+    # Build both AAB (for store) and APK (for manual testing)
+    gradle(
+      tasks: ["bundleRelease", "assembleRelease"]
+    )
+
+    # Upload AAB to Google Play Store (Supply)
+    upload_to_play_store(
+      track: "internal",
+      aab: "android/app/build/outputs/bundle/release/app-release.aab",
+      skip_upload_metadata: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true
+    )
+  end
+
+  desc "Deploy to Play Store Production with Metadata and Screenshots"
+  lane :deploy do
+    # Ensure build is fresh
+    gradle(task: "bundle", build_type: "Release")
+
+    # Upload to Google Play Store (Supply)
+    upload_to_play_store(
+      track: "production",
+      aab: "android/app/build/outputs/bundle/release/app-release.aab",
+      metadata_path: "fastlane/metadata/android",
+      # supply automatically looks for images in metadata_path/[locale]/images
+      skip_upload_metadata: false,
+      skip_upload_images: false,
+      skip_upload_screenshots: false,
+      validate_only: false
+    )
+  end
+
+  desc "Initialize or Update local Google Play metadata"
+  lane :init_play_metadata do
+    supply_init(
+      package_name: "com.nexapp.crystalfruitodyssey"
+    )
+  end
+end
