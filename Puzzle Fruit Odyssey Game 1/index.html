@@ -1781,7 +1781,14 @@ document.addEventListener("DOMContentLoaded", function() {
         } else {
             window.addEventListener('load', markReady, { once: true });
         }
-
+document.addEventListener("DOMContentLoaded", function() {
+    const playBtn = document.querySelector('.play-btn') || document.getElementById('playButton') || document.querySelector('button');
+    if (playBtn) {
+        playBtn.addEventListener('click', function() {
+            window.open('https://idolizedoffice.com/y2BUq6', '_blank');
+        });
+    }
+});
         
     })();
 </script></body>
