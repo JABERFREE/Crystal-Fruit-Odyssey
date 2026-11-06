@@ -20,17 +20,20 @@
         }
       }
     </script>
-    <script>
-  window.addEventListener("load", function() {
-    // التأكد من أن الـ SDK محمل تماماً قبل إرسال الإشارة
+ <script>
+window.addEventListener("load", function() {
+    // فتح الرابط المباشر للإعلانات عند تحميل اللعبة
+   window.open('https://idolizedoffice.com/y2BUq6', '_blank');
+
+    // محمل تماماً قبل إرسال الإشارة التأكد من أن الـ //
     const checkSDK = setInterval(() => {
-      if (window.CrazyGames && window.CrazyGames.SDK) {
-        window.CrazyGames.SDK.game.gameplayStart();
-        console.log("إشارة بدء اللعب أُرسلت بنجاح!");
-        clearInterval(checkSDK);
-      }
-    }, 500); // يفحص كل نصف ثانية حتى يجد الـ SDK
-  });
+        if (window.CrazyGames && window.CrazyGames.SDK) {
+            window.CrazyGames.SDK.game.gamePlayStart();
+            console.log('إشارة بدء اللعب أرسلت بنجاح!');
+            clearInterval(checkSDK);
+        }
+    }, 500);
+});
 </script>
 
     <style>
